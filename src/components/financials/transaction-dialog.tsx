@@ -48,7 +48,7 @@ interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transaction: Partial<Transaction> | null;
-  onSave: (values: Transaction) => void;
+  onSave: (values: Partial<Transaction>) => void;
 }
 
 export function TransactionDialog({ open, onOpenChange, transaction, onSave }: TransactionDialogProps) {
@@ -83,10 +83,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
   }, [open, transaction, form]);
   
   const onSubmit = (values: FormValues) => {
-    onSave({
-      ...values,
-      id: values.id || crypto.randomUUID(),
-    });
+    onSave(values);
     onOpenChange(false);
   };
 
