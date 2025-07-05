@@ -63,24 +63,30 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
   useEffect(() => {
     const defaultDate = new Date().toISOString().split('T')[0];
 
-    if (open && transaction) {
-      form.reset({
-        id: transaction.id,
-        type: transaction.type,
-        amount: transaction.amount,
-        description: transaction.description,
-        category: transaction.category,
-        date: transaction.date || new Date(defaultDate),
-      });
-    } else if (open) {
-      form.reset({
-        type: transaction?.type,
-        amount: 0,
-        description: '',
-        date: new Date(defaultDate)
-      });
+    if (open) {
+      if (isEditing && transaction) {
+        // Editing an existing transaction
+        form.reset({
+          id: transaction.id,
+          type: transaction.type,
+          amount: transaction.amount,
+          description: transaction.description,
+          category: transaction.category,
+          date: transaction.date || new Date(defaultDate),
+        });
+      } else {
+        // Adding a new transaction
+        form.reset({
+          id: undefined,
+          type: transaction?.type,
+          amount: 0,
+          description: '',
+          category: undefined,
+          date: new Date(defaultDate),
+        });
+      }
     }
-  }, [open, transaction, form]);
+  }, [open, transaction, form, isEditing]);
   
   const onSubmit = (values: FormValues) => {
     onSave(values);
