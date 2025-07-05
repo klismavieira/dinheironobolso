@@ -78,7 +78,7 @@ export default function Home() {
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Adicionar Receita
             </Button>
-            <Button onClick={() => handleAddTransaction('expense')} className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button onClick={() => handleAddTransaction('expense')} variant="destructive">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Adicionar Despesa
             </Button>
