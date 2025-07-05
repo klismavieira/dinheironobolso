@@ -235,7 +235,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
                       <FormItem>
                         <FormLabel>Número de Parcelas</FormLabel>
                         <FormControl>
-                          <Input type="number" min="2" placeholder="Ex: 12" {...field} />
+                          <Input type="number" min="2" placeholder="Ex: 12" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
