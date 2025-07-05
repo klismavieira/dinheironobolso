@@ -11,7 +11,7 @@ import {
 import { Header } from '@/components/layout/header';
 import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';
-import { TransactionDialog } from '@/components/financials/transaction-dialog';
+import { TransactionDialog, type FormValues } from '@/components/financials/transaction-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { addMonths } from 'date-fns';
 
 export default function Home() {
   const { toast } = useToast();
@@ -93,25 +94,51 @@ export default function Home() {
     }
   };
 
-  const handleSaveTransaction = async (transaction: Partial<Transaction>) => {
+  const handleSaveTransaction = async (values: FormValues) => {
     try {
-       if (transaction.id) {
-        const { id, ...dataToUpdate } = transaction;
+      if (values.id) {
+        // Logic for updating an existing transaction
+        const { id, isFixed, installments, ...dataToUpdate } = values;
         await updateTransaction(id, dataToUpdate);
         toast({
-            title: "Transação atualizada!",
-            description: "Sua transação foi atualizada com sucesso.",
+          title: "Transação atualizada!",
+          description: "Sua transação foi atualizada com sucesso.",
         });
       } else {
-        const { id, ...dataToAdd } = transaction;
-        await addTransaction(dataToAdd as Omit<Transaction, 'id'>);
-        toast({
+        // Logic for adding a new transaction
+        const { isFixed, installments, ...dataToAdd } = values;
+
+        if (isFixed && installments && installments > 1) {
+          // Recurring transaction
+          const originalDate = dataToAdd.date;
+          for (let i = 0; i < installments; i++) {
+            const newDate = addMonths(originalDate, i);
+            const newDescription = `${dataToAdd.description} (${i + 1}/${installments})`;
+            
+            const transactionData: Omit<Transaction, 'id'> = {
+              ...dataToAdd,
+              date: newDate,
+              description: newDescription,
+            };
+            await addTransaction(transactionData);
+          }
+          toast({
+            title: "Transações recorrentes adicionadas!",
+            description: `${installments} transações foram adicionadas com sucesso.`,
+          });
+        } else {
+          // Single transaction
+          const { id, ...singleData } = dataToAdd;
+          await addTransaction(singleData as Omit<Transaction, 'id'>);
+          toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
-        });
+          });
+        }
       }
     } catch (error) {
-       toast({
+      console.error(error);
+      toast({
         title: "Erro ao salvar",
         description: "Não foi possível salvar a transação.",
         variant: "destructive",
