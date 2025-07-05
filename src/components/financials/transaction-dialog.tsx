@@ -39,7 +39,17 @@ const formSchema = z.object({
   amount: z.coerce.number().min(0.01, 'O valor deve ser maior que zero.'),
   description: z.string().min(2, 'A descrição é obrigatória.').max(100),
   category: z.string({ required_error: 'Selecione uma categoria.' }),
-  date: z.coerce.date({required_error: 'A data é obrigatória.'}),
+  date: z.preprocess((arg) => {
+    // The HTML date input returns a string 'YYYY-MM-DD'.
+    // `new Date('YYYY-MM-DD')` is parsed as UTC midnight.
+    // This can cause the date to be off by one day depending on the user's timezone.
+    // By adding 'T00:00:00', we explicitly tell it to parse in the local timezone.
+    if (typeof arg === 'string') {
+      return new Date(`${arg}T00:00:00`);
+    }
+    // For initial values which are already Date objects, we pass them through.
+    return arg;
+  }, z.date({ required_error: 'A data é obrigatória.' })),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -51,6 +61,13 @@ interface TransactionDialogProps {
   onSave: (values: Partial<Transaction>) => void;
 }
 
+const toYYYYMMDD = (date: Date) => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function TransactionDialog({ open, onOpenChange, transaction, onSave }: TransactionDialogProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,8 +78,6 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
   const isEditing = !!transaction?.id;
 
   useEffect(() => {
-    const defaultDate = new Date().toISOString().split('T')[0];
-
     if (open) {
       if (isEditing && transaction) {
         // Editing an existing transaction
@@ -72,17 +87,17 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
           amount: transaction.amount,
           description: transaction.description,
           category: transaction.category,
-          date: transaction.date || new Date(defaultDate),
+          date: transaction.date || new Date(), // Use existing date or today
         });
       } else {
-        // Adding a new transaction
+        // Adding a new transaction, default to today
         form.reset({
           id: undefined,
           type: transaction?.type,
           amount: 0,
           description: '',
           category: undefined,
-          date: new Date(defaultDate),
+          date: new Date(),
         });
       }
     }
@@ -138,7 +153,11 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
                     <FormItem>
                       <FormLabel>Data</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''} />
+                        <Input
+                          type="date"
+                          {...field}
+                          value={field.value instanceof Date ? toYYYYMMDD(field.value) : field.value || ''}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
