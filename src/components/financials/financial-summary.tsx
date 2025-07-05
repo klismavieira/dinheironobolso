@@ -31,7 +31,7 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-          <TrendingUp className="h-5 w-5 text-green-500" />
+          <TrendingUp className="h-5 w-5 text-accent" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
@@ -41,7 +41,7 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Despesa Total</CardTitle>
-          <TrendingDown className="h-5 w-5 text-red-500" />
+          <TrendingDown className="h-5 w-5 text-destructive" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
@@ -54,7 +54,7 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
           <Scale className="h-5 w-5 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
             {formatCurrency(balance)}
           </div>
           <p className="text-xs text-muted-foreground">Balanço atual</p>

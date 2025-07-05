@@ -48,7 +48,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete }: Trans
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className={`font-bold text-sm ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`font-bold text-sm ${transaction.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
                           {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                         </span>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(transaction)}>
