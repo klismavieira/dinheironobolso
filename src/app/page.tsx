@@ -16,6 +16,16 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Home() {
   const { toast } = useToast();
@@ -23,6 +33,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onTransactionsUpdate(
@@ -55,9 +67,15 @@ export default function Home() {
     setDialogOpen(true);
   };
 
-  const handleDeleteTransaction = async (id: string) => {
+  const handleDeleteTransaction = (id: string) => {
+    setTransactionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return;
     try {
-      await deleteTransaction(id);
+      await deleteTransaction(transactionToDelete);
       toast({
         title: "Transação excluída!",
         description: "A transação foi removida com sucesso.",
@@ -69,6 +87,9 @@ export default function Home() {
         description: "Não foi possível remover a transação.",
         variant: "destructive",
       });
+    } finally {
+      setTransactionToDelete(null);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -154,6 +175,20 @@ export default function Home() {
         transaction={currentTransaction}
         onSave={handleSaveTransaction}
       />
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação não pode ser desfeita. Isso excluirá permanentemente a sua transação.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
