@@ -50,15 +50,20 @@ const formSchema = z.object({
     return arg;
   }, z.date({ required_error: 'A data é obrigatória.' })),
   isFixed: z.boolean().default(false),
-  installments: z.coerce.number().int().positive().optional(),
+  endDate: z.preprocess((arg) => {
+    if (typeof arg === 'string' && arg) {
+      return new Date(`${arg}T00:00:00`);
+    }
+    return arg;
+  }, z.date().optional()),
 }).refine(data => {
-  if (data.isFixed) {
-    return data.installments !== undefined && data.installments > 1;
+  if (data.isFixed && data.endDate) {
+    return data.endDate.getTime() > data.date.getTime();
   }
   return true;
 }, {
-  message: "O número de parcelas deve ser 2 ou mais.",
-  path: ["installments"],
+  message: "A data final deve ser posterior à data da transação.",
+  path: ["endDate"],
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -101,7 +106,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
           category: transaction.category,
           date: transaction.date || new Date(),
           isFixed: false,
-          installments: undefined,
+          endDate: undefined,
         });
       } else {
         form.reset({
@@ -112,7 +117,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
           category: undefined,
           date: new Date(),
           isFixed: false,
-          installments: undefined,
+          endDate: undefined,
         });
       }
     }
@@ -230,13 +235,21 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave }: T
                 {isFixed && (
                   <FormField
                     control={form.control}
-                    name="installments"
+                    name="endDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Número de Parcelas</FormLabel>
+                        <FormLabel>Data Final (Opcional)</FormLabel>
                         <FormControl>
-                          <Input type="number" min="2" placeholder="Ex: 12" {...field} value={field.value ?? ''} />
+                           <Input
+                              type="date"
+                              {...field}
+                              value={field.value instanceof Date ? toYYYYMMDD(field.value) : ''}
+                              onChange={e => field.onChange(e.target.valueAsDate)}
+                            />
                         </FormControl>
+                         <FormDescription>
+                          Deixe em branco para repetir por 12 meses.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

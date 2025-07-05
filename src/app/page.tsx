@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { addMonths } from 'date-fns';
+import { addMonths, differenceInCalendarMonths } from 'date-fns';
 
 export default function Home() {
   const { toast } = useToast();
@@ -98,7 +98,7 @@ export default function Home() {
     try {
       if (values.id) {
         // Logic for updating an existing transaction
-        const { id, isFixed, installments, ...dataToUpdate } = values;
+        const { id, isFixed, endDate, ...dataToUpdate } = values;
         await updateTransaction(id, dataToUpdate);
         toast({
           title: "Transação atualizada!",
@@ -106,14 +106,30 @@ export default function Home() {
         });
       } else {
         // Logic for adding a new transaction
-        const { isFixed, installments, ...dataToAdd } = values;
+        const { isFixed, endDate, ...dataToAdd } = values;
 
-        if (isFixed && installments && installments > 1) {
+        if (isFixed) {
           // Recurring transaction
-          const originalDate = dataToAdd.date;
+          const startDate = dataToAdd.date;
+          // Default to 11 months in the future, for a total of 12 occurrences
+          const finalDate = endDate || addMonths(startDate, 11);
+          
+          if (finalDate < startDate) {
+             toast({
+              title: "Erro de data",
+              description: "A data final não pode ser anterior à data da transação.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const installments = differenceInCalendarMonths(finalDate, startDate) + 1;
+          
           for (let i = 0; i < installments; i++) {
-            const newDate = addMonths(originalDate, i);
-            const newDescription = `${dataToAdd.description} (${i + 1}/${installments})`;
+            const newDate = addMonths(startDate, i);
+            const newDescription = installments > 1 
+              ? `${dataToAdd.description} (${i + 1}/${installments})`
+              : dataToAdd.description;
             
             const transactionData: Omit<Transaction, 'id'> = {
               ...dataToAdd,
@@ -124,12 +140,11 @@ export default function Home() {
           }
           toast({
             title: "Transações recorrentes adicionadas!",
-            description: `${installments} transações foram adicionadas com sucesso.`,
+            description: `${installments} transação(ões) foram adicionadas com sucesso.`,
           });
         } else {
           // Single transaction
-          const { id, ...singleData } = dataToAdd;
-          await addTransaction(singleData as Omit<Transaction, 'id'>);
+          await addTransaction(dataToAdd);
           toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
