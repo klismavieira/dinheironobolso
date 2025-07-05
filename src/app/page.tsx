@@ -6,7 +6,6 @@ import { Header } from '@/components/layout/header';
 import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';
 import { TransactionDialog } from '@/components/financials/transaction-dialog';
-import { AiSuggestions } from '@/components/financials/ai-suggestions';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
@@ -84,24 +83,19 @@ export default function Home() {
             </Button>
         </div>
 
-        <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 grid gap-4 md:gap-8 md:grid-cols-2">
-            <TransactionList
-              title="Receitas"
-              transactions={incomeTransactions}
-              onEdit={handleEditTransaction}
-              onDelete={handleDeleteTransaction}
-            />
-            <TransactionList
-              title="Despesas"
-              transactions={expenseTransactions}
-              onEdit={handleEditTransaction}
-              onDelete={handleDeleteTransaction}
-            />
-          </div>
-          <div className="lg:col-span-1">
-            <AiSuggestions transactions={transactions} />
-          </div>
+        <div className="grid gap-4 md:gap-8 md:grid-cols-2">
+          <TransactionList
+            title="Receitas"
+            transactions={incomeTransactions}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
+          />
+          <TransactionList
+            title="Despesas"
+            transactions={expenseTransactions}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
+          />
         </div>
       </main>
       <TransactionDialog
