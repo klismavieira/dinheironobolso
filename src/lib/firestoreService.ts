@@ -1,6 +1,5 @@
 import {
   collection,
-  getDocs,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -8,6 +7,7 @@ import {
   query,
   orderBy,
   Timestamp,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Transaction } from './types';
@@ -24,11 +24,25 @@ const fromFirestore = (docSnapshot: any): Transaction => {
   } as Transaction;
 };
 
-
-export const getTransactions = async (): Promise<Transaction[]> => {
+export const onTransactionsUpdate = (
+  onUpdate: (transactions: Transaction[]) => void,
+  onError: (error: Error) => void
+) => {
   const q = query(collection(db, TRANSACTIONS_COLLECTION), orderBy('date', 'desc'));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(fromFirestore);
+  
+  const unsubscribe = onSnapshot(
+    q,
+    (querySnapshot) => {
+      const transactions = querySnapshot.docs.map(fromFirestore);
+      onUpdate(transactions);
+    },
+    (error) => {
+      console.error("Error listening to transaction updates:", error);
+      onError(error);
+    }
+  );
+
+  return unsubscribe;
 };
 
 export const addTransaction = async (transactionData: Omit<Transaction, 'id'>): Promise<void> => {

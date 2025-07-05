@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import type { Transaction } from '@/lib/types';
 import {
-  getTransactions,
+  onTransactionsUpdate,
   addTransaction,
   updateTransaction,
   deleteTransaction,
@@ -24,26 +24,26 @@ export default function Home() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> | null>(null);
 
-  const fetchTransactions = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getTransactions();
-      setTransactions(data);
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      toast({
-        title: "Erro ao buscar transações",
-        description: "Não foi possível carregar os dados. Tente novamente mais tarde.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    const unsubscribe = onTransactionsUpdate(
+      (updatedTransactions) => {
+        setTransactions(updatedTransactions);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching transactions:", error);
+        toast({
+          title: "Erro ao buscar transações",
+          description: "Não foi possível carregar os dados. Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [toast]);
 
   const handleAddTransaction = (type: 'income' | 'expense') => {
     setCurrentTransaction({ type });
@@ -58,7 +58,6 @@ export default function Home() {
   const handleDeleteTransaction = async (id: string) => {
     try {
       await deleteTransaction(id);
-      await fetchTransactions();
       toast({
         title: "Transação excluída!",
         description: "A transação foi removida com sucesso.",
@@ -90,7 +89,6 @@ export default function Home() {
             description: "Sua nova transação foi adicionada com sucesso.",
         });
       }
-      await fetchTransactions();
     } catch (error) {
        toast({
         title: "Erro ao salvar",
