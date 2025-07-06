@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,12 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
     return new Intl.DateTimeFormat('pt-BR').format(date);
   }
 
-  const today = startOfDay(new Date());
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // This only runs on the client, avoiding server/client mismatch
+    setToday(startOfDay(new Date()));
+  }, []);
 
   return (
     <Card className="flex flex-col h-full">
@@ -44,7 +50,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
             {transactions.length > 0 ? (
               <div className="space-y-4">
                 {transactions.map((transaction, index) => {
-                  const isLate = !transaction.isPaid && transaction.date < today;
+                  const isLate = today && !transaction.isPaid && transaction.date < today;
                   return (
                     <div key={transaction.id}>
                       <div className="grid grid-cols-[1fr_auto] items-start gap-4">

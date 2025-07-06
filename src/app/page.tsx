@@ -51,16 +51,20 @@ export default function Home() {
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [transactionToTogglePaid, setTransactionToTogglePaid] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
+    // This effect runs only on the client, after hydration, to avoid mismatch
+    setDateRange({
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    });
+  }, []);
+
+  useEffect(() => {
+    // Only fetch transactions when dateRange is defined
     if (!dateRange?.from || !dateRange?.to) {
-        setTransactions([]);
-        setLoading(false);
-        return;
+        return; // Keep loading until dateRange is initialized
     }
 
     setLoading(true);
