@@ -26,6 +26,7 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const balance = totalIncome - totalExpenses;
+  const paidBalance = paidIncome - paidExpenses;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -35,59 +36,82 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 md:gap-8">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-          <TrendingUp className="h-5 w-5 text-accent" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
-          <p className="text-xs text-muted-foreground">Total de entradas no período</p>
-        </CardContent>
-      </Card>
-       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Receitas Pagas</CardTitle>
-          <CheckCircle2 className="h-5 w-5 text-accent" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(paidIncome)}</div>
-          <p className="text-xs text-muted-foreground">Total de entradas recebidas</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Despesa Total</CardTitle>
-          <TrendingDown className="h-5 w-5 text-destructive" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-          <p className="text-xs text-muted-foreground">Total de saídas no período</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Despesas Pagas</CardTitle>
-          <CheckCircle2 className="h-5 w-5 text-destructive" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(paidExpenses)}</div>
-          <p className="text-xs text-muted-foreground">Total de saídas efetivadas</p>
-        </CardContent>
-      </Card>
-      <Card className="md:col-span-2 lg:col-span-1">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Saldo</CardTitle>
-          <Scale className="h-5 w-5 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
-            {formatCurrency(balance)}
-          </div>
-          <p className="text-xs text-muted-foreground">Balanço total do período</p>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-8">
+      <div>
+        <h2 className="text-xl font-semibold mb-4 text-foreground">Resumo do Período</h2>
+        <div className="grid gap-4 md:grid-cols-3 md:gap-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+              <TrendingUp className="h-5 w-5 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
+              <p className="text-xs text-muted-foreground">Total de entradas no período</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Despesa Total</CardTitle>
+              <TrendingDown className="h-5 w-5 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+              <p className="text-xs text-muted-foreground">Total de saídas no período</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Saldo Previsto</CardTitle>
+              <Scale className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+                {formatCurrency(balance)}
+              </div>
+              <p className="text-xs text-muted-foreground">Balanço total do período</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4 text-foreground">Resumo Realizado</h2>
+        <div className="grid gap-4 md:grid-cols-3 md:gap-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Receitas Pagas</CardTitle>
+              <CheckCircle2 className="h-5 w-5 text-accent" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(paidIncome)}</div>
+              <p className="text-xs text-muted-foreground">Total de entradas recebidas</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Despesas Pagas</CardTitle>
+              <CheckCircle2 className="h-5 w-5 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(paidExpenses)}</div>
+              <p className="text-xs text-muted-foreground">Total de saídas efetivadas</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Saldo Realizado</CardTitle>
+              <Scale className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${paidBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+                {formatCurrency(paidBalance)}
+              </div>
+              <p className="text-xs text-muted-foreground">Balanço das contas pagas</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
