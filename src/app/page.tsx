@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths, startOfDay } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
@@ -167,22 +167,31 @@ export default function Home() {
   
   const handleSaveTransaction = async (values: FormValues) => {
     try {
-      const { id, isFixed, installments, editScope, ...transactionData } = values;
+      const { id, isFixed, installments, editScope } = values;
   
       if (id) {
         // --- UPDATE ---
-        if (editScope === 'future' && transactionData.seriesId) {
+        if (editScope === 'future' && values.seriesId) {
           const updateData = {
-            amount: transactionData.amount,
-            description: transactionData.description,
-            category: transactionData.category,
+            amount: values.amount,
+            description: values.description,
+            category: values.category,
           };
-          await updateFutureTransactions(transactionData.seriesId, transactionData.date, updateData);
+          await updateFutureTransactions(values.seriesId, values.date, updateData);
           toast({
             title: "Transações futuras atualizadas!",
             description: "A série foi atualizada com sucesso a partir desta data.",
           });
         } else {
+          // For single transaction update, we gather all editable fields.
+          const transactionData = {
+            type: values.type,
+            amount: values.amount,
+            description: values.description,
+            category: values.category,
+            date: values.date,
+            isPaid: values.isPaid,
+          };
           await updateTransaction(id, transactionData);
           toast({
             title: "Transação atualizada!",
@@ -191,14 +200,23 @@ export default function Home() {
         }
       } else {
         // --- CREATE ---
+        const baseTransactionData = {
+          type: values.type,
+          amount: values.amount,
+          description: values.description,
+          category: values.category,
+          date: values.date,
+          isPaid: values.isPaid,
+        };
+  
         if (isFixed) {
-          const numInstallments = installments || 12; // Default to 12 if not provided
+          const numInstallments = installments || 12;
           const seriesId = uuidv4();
           const batchData: Omit<Transaction, 'id'>[] = [];
           for (let i = 0; i < numInstallments; i++) {
             batchData.push({
-              ...transactionData,
-              date: addMonths(transactionData.date, i),
+              ...baseTransactionData,
+              date: addMonths(baseTransactionData.date, i),
               seriesId,
               installment: `${i + 1}/${numInstallments}`,
             });
@@ -209,7 +227,9 @@ export default function Home() {
             description: `${numInstallments} transações foram criadas com sucesso.`,
           });
         } else {
-          await addTransaction(transactionData);
+          // For a single transaction, we pass the clean base data.
+          // This object does not have `seriesId` or `installment`, solving the bug.
+          await addTransaction(baseTransactionData);
           toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
