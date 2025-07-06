@@ -78,8 +78,7 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
     where('date', '>=', startDate),
-    where('date', '<=', endDate),
-    orderBy('date', 'desc')
+    where('date', '<=', endDate)
   );
 
   try {

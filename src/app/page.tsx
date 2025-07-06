@@ -90,6 +90,8 @@ export default function Home() {
       setLoading(true);
       try {
         const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+        // Sort transactions by date descending, as this is no longer done in the query
+        fetchedTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
         setTransactions(fetchedTransactions);
       } catch (error) {
         console.error("Failed to fetch transactions:", error);
