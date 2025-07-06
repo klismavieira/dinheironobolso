@@ -9,6 +9,7 @@ export const INCOME_CATEGORIES = [
 
 export const EXPENSE_CATEGORIES = [
   'Moradia',
+  'Casa',
   'Alimentação',
   'Transporte',
   'Lazer',
