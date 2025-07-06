@@ -76,7 +76,7 @@ export default function Home() {
       }
     };
     fetchTotalCount();
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     // Fetch transactions when dateRange is defined
@@ -104,7 +104,7 @@ export default function Home() {
     };
 
     fetchTransactions();
-  }, [dateRange, toast]);
+  }, [dateRange]);
 
   useEffect(() => {
     if (!dateRange?.from) {
@@ -143,7 +143,7 @@ export default function Home() {
     };
 
     calculatePreviousBalance();
-  }, [dateRange, toast]);
+  }, [dateRange]);
   
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
@@ -161,7 +161,7 @@ export default function Home() {
     );
 
     return () => unsubscribe();
-  }, [toast]);
+  }, []);
 
 
   const handleAddTransaction = (type: 'income' | 'expense') => {
@@ -194,6 +194,12 @@ export default function Home() {
         title: "Status alterado!",
         description: "O status de pagamento da transação foi atualizado.",
       });
+      // Re-fetch data after update to reflect changes immediately
+      if (dateRange?.from && dateRange.to) {
+        const data = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
+        setTransactions(sortedData);
+      }
     } catch (error) {
       console.error("Error updating paid status:", error);
       const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
@@ -225,6 +231,12 @@ export default function Home() {
           description: "A transação foi removida com sucesso.",
           variant: 'destructive'
         });
+      }
+       // Re-fetch data after delete
+       if (dateRange?.from && dateRange.to) {
+        const data = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
+        setTransactions(sortedData);
       }
     } catch (error) {
        const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
@@ -308,6 +320,12 @@ export default function Home() {
             description: "Sua nova transação foi adicionada com sucesso.",
           });
         }
+      }
+       // Re-fetch data after save
+      if (dateRange?.from && dateRange.to) {
+        const data = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
+        setTransactions(sortedData);
       }
     } catch (error) {
       console.error(error);
