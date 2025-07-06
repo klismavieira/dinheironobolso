@@ -216,55 +216,52 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3">
-            <Card>
-                <CardHeader>
-                <CardTitle>Faturamento/Despesa</CardTitle>
-                <CardDescription>Resumo do período selecionado.</CardDescription>
-                </CardHeader>
-                <CardContent className="pl-2">
-                {loading ? (
-                    <Skeleton className="h-[400px] w-full" />
-                ) : (
-                    <AnnualSummaryChart data={chartData} />
-                )}
-                </CardContent>
-            </Card>
-        </div>
-        <div className="lg:col-span-2 flex flex-col gap-4">
-           {loading ? (
-             <>
-              <Skeleton className="h-full w-full min-h-[450px]" />
-              <Skeleton className="h-full w-full min-h-[450px]" />
-             </>
-           ) : (
-            <>
-              {expensePieData.length > 0 ? (
-                <CategoryPieChart 
-                  data={expensePieData} 
-                  title="Despesas por Categoria" 
-                  description="Distribuição das despesas no período selecionado." 
-                />
-              ) : (
-                <Card className="flex items-center justify-center min-h-[450px]">
-                  <CardDescription>Nenhuma despesa no período.</CardDescription>
-                </Card>
-              )}
-              {incomePieData.length > 0 ? (
-                <CategoryPieChart 
-                  data={incomePieData} 
-                  title="Receitas por Categoria" 
-                  description="Distribuição das receitas no período selecionado." 
-                />
-              ) : (
-                <Card className="flex items-center justify-center min-h-[450px]">
-                  <CardDescription>Nenhuma receita no período.</CardDescription>
-                </Card>
-              )}
-            </>
-           )}
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Faturamento/Despesa</CardTitle>
+          <CardDescription>Resumo do período selecionado.</CardDescription>
+        </CardHeader>
+        <CardContent className="pl-2">
+          {loading ? (
+            <Skeleton className="h-[400px] w-full" />
+          ) : (
+            <AnnualSummaryChart data={chartData} />
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {loading ? (
+          <>
+            <Skeleton className="h-full w-full min-h-[450px]" />
+            <Skeleton className="h-full w-full min-h-[450px]" />
+          </>
+        ) : (
+          <>
+            {expensePieData.length > 0 ? (
+              <CategoryPieChart 
+                data={expensePieData} 
+                title="Despesas por Categoria" 
+                description="Distribuição das despesas no período selecionado." 
+              />
+            ) : (
+              <Card className="flex items-center justify-center min-h-[450px]">
+                <CardDescription>Nenhuma despesa no período.</CardDescription>
+              </Card>
+            )}
+            {incomePieData.length > 0 ? (
+              <CategoryPieChart 
+                data={incomePieData} 
+                title="Receitas por Categoria" 
+                description="Distribuição das receitas no período selecionado." 
+              />
+            ) : (
+              <Card className="flex items-center justify-center min-h-[450px]">
+                <CardDescription>Nenhuma receita no período.</CardDescription>
+              </Card>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
