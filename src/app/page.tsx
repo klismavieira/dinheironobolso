@@ -379,7 +379,7 @@ export default function Home() {
               <PlusCircle className="mr-2 h-4 w-4" />
               Adicionar Receita
           </Button>
-          <Button variant="secondary" onClick={() => handleAddTransaction('expense')}>
+          <Button variant="destructive" onClick={() => handleAddTransaction('expense')}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Adicionar Despesa
           </Button>
