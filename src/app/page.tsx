@@ -361,7 +361,8 @@ export default function Home() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-3 md:gap-8">
+        <div className="grid gap-4 md:grid-cols-4 md:gap-8">
+          <Skeleton className="h-[125px] w-full" />
           <Skeleton className="h-[125px] w-full" />
           <Skeleton className="h-[125px] w-full" />
           <Skeleton className="h-[125px] w-full" />
@@ -370,7 +371,6 @@ export default function Home() {
         <FinancialSummary 
           transactions={transactions} 
           previousBalance={previousBalance}
-          totalTransactionsCount={transactions.length}
         />
       )}
 
