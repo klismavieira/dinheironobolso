@@ -61,28 +61,21 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
   }
 };
 
-export const getIncomeForPeriod = async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
-  const startTimestamp = Timestamp.fromDate(startDate);
-  const endTimestamp = Timestamp.fromDate(endDate);
-
-  const q = query(
-    collection(db, TRANSACTIONS_COLLECTION),
-    where('date', '>=', startTimestamp),
-    where('date', '<=', endTimestamp),
-    where('type', '==', 'income')
-  );
+export const getAllTransactions = async (): Promise<Transaction[]> => {
+  const q = query(collection(db, TRANSACTIONS_COLLECTION));
 
   try {
     const querySnapshot = await getDocs(q);
     const transactions = querySnapshot.docs.map(fromFirestore);
+    // Sort on client to avoid needing a composite index
     transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
     return transactions;
   } catch (error) {
-    console.error("Firebase Error: Failed to get income for period.", error);
+    console.error("Firebase Error: Failed to get all transactions.", error);
     if (error instanceof Error) {
-      throw new Error(`Não foi possível buscar as receitas do período: ${error.message}`);
+      throw new Error(`Não foi possível buscar todas as transações: ${error.message}`);
     }
-    throw new Error("Não foi possível buscar as receitas. Verifique sua conexão ou permissões.");
+    throw new Error("Não foi possível buscar as transações. Verifique sua conexão ou permissões.");
   }
 };
 

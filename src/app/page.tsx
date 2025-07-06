@@ -11,15 +11,14 @@ import {
   addTransactionsBatch,
   onCategoriesUpdate,
   type Categories,
-  getTransactionsForPeriod,
-  getTotalTransactionCount,
+  getAllTransactions,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';
 import { TransactionDialog, type FormValues } from '@/components/financials/transaction-dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -32,14 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths, subMonths } from 'date-fns';
+import { addMonths } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
-import { ptBR } from 'date-fns/locale';
-import type { DateRange } from 'react-day-picker';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -50,19 +43,11 @@ export default function Home() {
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [transactionToTogglePaid, setTransactionToTogglePaid] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [previousBalance, setPreviousBalance] = useState(0);
-  const [totalTransactionsCount, setTotalTransactionsCount] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!dateRange?.from || !dateRange?.to) {
-      setTransactions([]);
-      return;
-    }
-
     setLoading(true);
     try {
-      const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+      const fetchedTransactions = await getAllTransactions();
       setTransactions(fetchedTransactions);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
@@ -75,76 +60,12 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange]);
-
-  useEffect(() => {
-    if (dateRange?.from && dateRange?.to) {
-      fetchData();
-    }
-  }, [dateRange, fetchData]);
-
-
-  useEffect(() => {
-    setDateRange({
-      from: startOfMonth(new Date()),
-      to: endOfMonth(new Date()),
-    });
-
-    const fetchTotalCount = async () => {
-      try {
-        const count = await getTotalTransactionCount();
-        setTotalTransactionsCount(count);
-      } catch (error) {
-          const description = error instanceof Error ? error.message : "Não foi possível buscar a contagem total.";
-          toast({
-            title: "Erro ao buscar dados",
-            description,
-            variant: "destructive",
-          });
-      }
-    };
-    fetchTotalCount();
   }, []);
 
   useEffect(() => {
-    if (!dateRange?.from) {
-      setPreviousBalance(0);
-      return;
-    };
+    fetchData();
+  }, [fetchData]);
 
-    const calculatePreviousBalance = async () => {
-      try {
-        const prevMonth = subMonths(dateRange.from, 1);
-        const prevMonthStart = startOfMonth(prevMonth);
-        const prevMonthEnd = endOfMonth(prevMonth);
-
-        const prevMonthTransactions = await getTransactionsForPeriod(prevMonthStart, prevMonthEnd);
-        
-        const income = prevMonthTransactions
-          .filter(t => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0);
-        
-        const expenses = prevMonthTransactions
-          .filter(t => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0);
-
-        setPreviousBalance(income - expenses);
-
-      } catch (error) {
-        console.error("Error calculating previous balance:", error);
-        const description = error instanceof Error ? error.message : "Não foi possível buscar os dados do mês anterior.";
-        toast({
-          title: "Erro ao calcular saldo anterior",
-          description,
-          variant: "destructive",
-        });
-        setPreviousBalance(0);
-      }
-    };
-
-    calculatePreviousBalance();
-  }, [dateRange]);
-  
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
       (updatedCategories) => {
@@ -165,7 +86,7 @@ export default function Home() {
 
 
   const handleAddTransaction = (type: 'income' | 'expense') => {
-    setCurrentTransaction({ type, date: dateRange?.from || new Date() });
+    setCurrentTransaction({ type, date: new Date() });
     setDialogOpen(true);
   };
 
@@ -321,92 +242,13 @@ export default function Home() {
   const incomeTransactions = transactions.filter((t) => t.type === 'income');
   const expenseTransactions = transactions.filter((t) => t.type === 'expense');
 
-  const handleMonthClick = (monthIndex: number) => {
-    const referenceDate = dateRange?.from || new Date();
-    const targetMonthDate = setMonth(referenceDate, monthIndex);
-    setDateRange({
-      from: startOfMonth(targetMonthDate),
-      to: endOfMonth(targetMonthDate),
-    });
-  };
-
-  const getActiveMonth = () => {
-    if (!dateRange?.from || !dateRange?.to) {
-      return -1;
-    }
-    const fromStartOfMonth = startOfMonth(dateRange.from);
-    const fromEndOfMonth = endOfMonth(dateRange.from);
-
-    if (
-      dateRange.from.getTime() === fromStartOfMonth.getTime() &&
-      dateRange.to?.getTime() === fromEndOfMonth.getTime()
-    ) {
-      return getMonth(dateRange.from);
-    }
-    return -1;
-  };
-
-  const activeMonth = getActiveMonth();
-  const months = Array.from({ length: 12 }, (_, i) => {
-      const referenceDate = dateRange?.from || new Date();
-      const monthName = format(setMonth(referenceDate, i), 'MMM', { locale: ptBR });
-      return monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.', '');
-  });
-
-
   return (
     <>
-      <div className="flex items-center justify-center gap-4">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id="date"
-              variant={"outline"}
-              className={cn(
-                "w-full sm:w-[300px] justify-start text-left font-normal",
-                !dateRange && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateRange?.from ? (
-                dateRange.to ? (
-                  <>
-                    {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-                    {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
-                  </>
-                ) : (
-                  format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
-                )
-              ) : (
-                <span>Selecione um período</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center">
-            <Calendar
-              initialFocus
-              mode="range"
-              defaultMonth={dateRange?.from}
-              selected={dateRange}
-              onSelect={setDateRange}
-              numberOfMonths={2}
-              locale={ptBR}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-2">
-          {months.map((month, index) => (
-              <Button
-                  key={month}
-                  variant={activeMonth === index ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleMonthClick(index)}
-              >
-                  {month}
-              </Button>
-          ))}
+      <div className="flex flex-col items-center justify-center p-4 bg-muted border-dashed border rounded-lg mb-4">
+        <h2 className="text-lg font-semibold text-center">Modo de Depuração Ativado</h2>
+        <p className="text-muted-foreground text-center text-sm">
+          Todos os filtros foram removidos. Exibindo todas as transações do banco de dados.
+        </p>
       </div>
 
       {loading ? (
@@ -418,8 +260,8 @@ export default function Home() {
       ) : (
         <FinancialSummary 
           transactions={transactions} 
-          previousBalance={previousBalance}
-          totalTransactionsCount={totalTransactionsCount}
+          previousBalance={0}
+          totalTransactionsCount={transactions.length}
         />
       )}
 
