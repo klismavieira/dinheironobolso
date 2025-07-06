@@ -71,14 +71,19 @@ export default function CreditCardsPage() {
 
   const handleSaveCard = async (values: CreditCardFormValues) => {
     try {
-      if (values.id) {
-        await updateCreditCard(values.id, values);
+      const { id, ...cardData } = values; // Separate id from the rest of the form data.
+
+      if (id) {
+        // If an ID exists, it's an update.
+        await updateCreditCard(id, cardData);
         toast({ title: "Cartão atualizado com sucesso!" });
       } else {
-        await addCreditCard(values);
+        // Otherwise, it's a new card.
+        await addCreditCard(cardData);
         toast({ title: "Cartão adicionado com sucesso!" });
       }
     } catch (error) {
+      console.error("Error saving card:", error);
       toast({ title: "Erro ao salvar cartão", variant: "destructive" });
     }
   };
