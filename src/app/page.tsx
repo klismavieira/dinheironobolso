@@ -13,6 +13,7 @@ import {
   onCategoriesUpdate,
   type Categories,
   getTransactionsForPeriod,
+  getTransactionsBeforeDate,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -41,6 +42,7 @@ import { cn } from '@/lib/utils';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [previousBalance, setPreviousBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
@@ -71,13 +73,22 @@ export default function Home() {
     const doFetch = async () => {
       setLoading(true);
       try {
+        // Fetch transactions for the current period
         const fetchedTransactions = await getTransactionsForPeriod(dateRange.from!, dateRange.to!);
         setTransactions(fetchedTransactions);
+
+        // Fetch transactions before the current period to calculate previous balance
+        const previousTransactions = await getTransactionsBeforeDate(dateRange.from!);
+        const calculatedPreviousBalance = previousTransactions.reduce((acc, t) => {
+          return acc + (t.type === 'income' ? t.amount : -t.amount);
+        }, 0);
+        setPreviousBalance(calculatedPreviousBalance);
+
       } catch (error) {
         console.error("Failed to fetch transactions:", error);
         const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
         toast({
-          title: "Erro ao Carregar Transações",
+          title: "Erro ao Carregar Dados",
           description,
           variant: "destructive",
         });
@@ -358,7 +369,7 @@ export default function Home() {
       ) : (
         <FinancialSummary 
           transactions={transactions} 
-          previousBalance={0}
+          previousBalance={previousBalance}
           totalTransactionsCount={transactions.length}
         />
       )}

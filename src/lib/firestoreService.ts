@@ -230,6 +230,29 @@ export const deleteFutureTransactions = async (seriesId: string, fromDate: Date)
   }
 };
 
+export const getTransactionsBeforeDate = async (endDate: Date): Promise<Transaction[]> => {
+  const endTimestamp = Timestamp.fromDate(endDate);
+
+  const q = query(
+    collection(db, TRANSACTIONS_COLLECTION),
+    where('date', '<', endTimestamp)
+  );
+
+  try {
+    const querySnapshot = await getDocs(q);
+    const transactions = querySnapshot.docs
+      .map(fromFirestore)
+      .filter((t): t is Transaction => t !== null);
+    return transactions;
+  } catch (error) {
+    console.error("Firebase Error: Failed to get transactions before date.", error);
+    if (error instanceof Error) {
+      throw new Error(`Não foi possível buscar as transações anteriores: ${error.message}`);
+    }
+    throw new Error("Não foi possível buscar as transações anteriores. Verifique sua conexão ou permissões.");
+  }
+};
+
 export type Categories = {
   income: string[];
   expense: string[];
