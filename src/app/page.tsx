@@ -178,21 +178,20 @@ export default function Home() {
 
   const handleSaveTransaction = async (values: FormValues) => {
     try {
-      if (values.id) {
+      const { id, isFixed, endDate, ...data } = values;
+
+      if (id) {
         // Logic for updating an existing transaction
-        const { id, isFixed, endDate, ...dataToUpdate } = values;
-        await updateTransaction(id, dataToUpdate);
+        await updateTransaction(id, data);
         toast({
           title: "Transação atualizada!",
           description: "Sua transação foi atualizada com sucesso.",
         });
       } else {
         // Logic for adding a new transaction
-        const { id, isFixed, endDate, ...dataToAdd } = values;
-
         if (isFixed) {
           // Recurring transaction
-          const startDate = dataToAdd.date;
+          const startDate = data.date;
           // Default to 11 months in the future, for a total of 12 occurrences
           const finalDate = endDate || addMonths(startDate, 11);
           
@@ -210,12 +209,12 @@ export default function Home() {
           
           for (let i = 0; i < installments; i++) {
             const newDate = addMonths(startDate, i);
-            const newDescription = installments > 1 && dataToAdd.type === 'expense'
-              ? `${dataToAdd.description} (${i + 1}/${installments})`
-              : dataToAdd.description;
+            const newDescription = installments > 1 && data.type === 'expense'
+              ? `${data.description} (${i + 1}/${installments})`
+              : data.description;
             
             const transactionData: Omit<Transaction, 'id'> = {
-              ...dataToAdd,
+              ...data,
               date: newDate,
               description: newDescription,
               isRecurring: true,
@@ -229,7 +228,7 @@ export default function Home() {
           });
         } else {
           // Single transaction
-          await addTransaction({ ...dataToAdd, isRecurring: false });
+          await addTransaction({ ...data, isRecurring: false });
           toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
