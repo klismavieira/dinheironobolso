@@ -252,17 +252,6 @@ export default function DashboardPage() {
           </>
         ) : (
           <>
-            {expensePieData.length > 0 ? (
-              <CategoryPieChart 
-                data={expensePieData} 
-                title="Despesas por Categoria" 
-                description="Distribuição das despesas no período selecionado." 
-              />
-            ) : (
-              <Card className="flex items-center justify-center min-h-[450px]">
-                <CardDescription>Nenhuma despesa no período.</CardDescription>
-              </Card>
-            )}
             {incomePieData.length > 0 ? (
               <CategoryPieChart 
                 data={incomePieData} 
@@ -272,6 +261,17 @@ export default function DashboardPage() {
             ) : (
               <Card className="flex items-center justify-center min-h-[450px]">
                 <CardDescription>Nenhuma receita no período.</CardDescription>
+              </Card>
+            )}
+            {expensePieData.length > 0 ? (
+              <CategoryPieChart 
+                data={expensePieData} 
+                title="Despesas por Categoria" 
+                description="Distribuição das despesas no período selecionado." 
+              />
+            ) : (
+              <Card className="flex items-center justify-center min-h-[450px]">
+                <CardDescription>Nenhuma despesa no período.</CardDescription>
               </Card>
             )}
           </>
