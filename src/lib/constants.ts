@@ -17,5 +17,6 @@ export const EXPENSE_CATEGORIES = [
   'Educação',
   'Compras',
   'Impostos',
+  'Fatura do Cartão',
   'Outros',
 ];
