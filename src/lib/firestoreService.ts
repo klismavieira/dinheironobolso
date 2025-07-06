@@ -82,10 +82,13 @@ export const deleteTransaction = async (id: string): Promise<void> => {
 };
 
 export const deleteFutureTransactions = async (seriesId: string, fromDate: Date): Promise<void> => {
+  // Convert the JS Date to a Firestore Timestamp to ensure query accuracy.
+  const fromTimestamp = Timestamp.fromDate(fromDate);
+
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
     where('seriesId', '==', seriesId),
-    where('date', '>=', fromDate),
+    where('date', '>=', fromTimestamp)
   );
   
   const querySnapshot = await getDocs(q);
