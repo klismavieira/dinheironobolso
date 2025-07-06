@@ -37,7 +37,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose
 } from '@/components/ui/dialog';
 import { collection, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -178,20 +177,37 @@ export default function Home() {
 
   const handleSaveTransaction = async (values: FormValues) => {
     try {
-      const { id, isFixed, endDate, ...data } = values;
+      const { id, isFixed, endDate } = values;
 
       if (id) {
-        // Logic for updating an existing transaction
-        await updateTransaction(id, data);
+        // UPDATE LOGIC
+        // When updating, we don't handle recurrence changes. We just update the single transaction.
+        const dataToUpdate: Partial<Omit<Transaction, 'id' | 'isRecurring' | 'seriesId'>> = {
+          type: values.type,
+          amount: values.amount,
+          description: values.description,
+          category: values.category,
+          date: values.date,
+        };
+        await updateTransaction(id, dataToUpdate);
         toast({
           title: "Transação atualizada!",
           description: "Sua transação foi atualizada com sucesso.",
         });
       } else {
-        // Logic for adding a new transaction
+        // ADD LOGIC
+        // Create a clean base object with only the data we need for Firestore.
+        const baseTransactionData = {
+          type: values.type,
+          amount: values.amount,
+          description: values.description,
+          category: values.category,
+          date: values.date,
+        };
+
         if (isFixed) {
-          // Recurring transaction
-          const startDate = data.date;
+          // RECURRING ADD
+          const startDate = baseTransactionData.date;
           // Default to 11 months in the future, for a total of 12 occurrences
           const finalDate = endDate || addMonths(startDate, 11);
           
@@ -207,28 +223,31 @@ export default function Home() {
           const installments = differenceInCalendarMonths(finalDate, startDate) + 1;
           const seriesId = doc(collection(db, 'transactions')).id;
           
+          const promises = [];
           for (let i = 0; i < installments; i++) {
             const newDate = addMonths(startDate, i);
-            const newDescription = installments > 1 && data.type === 'expense'
-              ? `${data.description} (${i + 1}/${installments})`
-              : data.description;
+            const newDescription = installments > 1 && baseTransactionData.type === 'expense'
+              ? `${baseTransactionData.description} (${i + 1}/${installments})`
+              : baseTransactionData.description;
             
-            const transactionData: Omit<Transaction, 'id'> = {
-              ...data,
+            const transactionDataForLoop: Omit<Transaction, 'id'> = {
+              ...baseTransactionData,
               date: newDate,
               description: newDescription,
               isRecurring: true,
               seriesId: seriesId,
             };
-            await addTransaction(transactionData);
+            promises.push(addTransaction(transactionDataForLoop));
           }
+          await Promise.all(promises);
+
           toast({
             title: "Transações recorrentes adicionadas!",
             description: `${installments} transação(ões) foram adicionadas com sucesso.`,
           });
         } else {
-          // Single transaction
-          await addTransaction({ ...data, isRecurring: false });
+          // SINGLE ADD
+          await addTransaction({ ...baseTransactionData, isRecurring: false });
           toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
