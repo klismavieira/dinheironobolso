@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import type { Transaction } from '@/lib/types';
 import {
   addTransaction,
@@ -19,7 +19,7 @@ import { TransactionList } from '@/components/financials/transaction-list';
 import { TransactionDialog, type FormValues } from '@/components/financials/transaction-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -38,33 +38,36 @@ export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> & { editScope?: 'future' } | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [transactionToTogglePaid, setTransactionToTogglePaid] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
+  const { toast } = useToast();
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const fetchedTransactions = await getAllTransactions();
-      setTransactions(fetchedTransactions);
-    } catch (error) {
-      console.error("Failed to fetch transactions:", error);
-      const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
-      toast({
-        title: "Erro ao carregar transações",
-        description,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const forceRefetch = () => setRefetchTrigger(c => c + 1);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const doFetch = async () => {
+      setLoading(true);
+      try {
+        const fetchedTransactions = await getAllTransactions();
+        setTransactions(fetchedTransactions);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
+        toast({
+          title: "Erro ao carregar transações",
+          description,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    doFetch();
+  }, [refetchTrigger]);
 
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
@@ -115,7 +118,7 @@ export default function Home() {
         title: "Status alterado!",
         description: "O status de pagamento da transação foi atualizado.",
       });
-      await fetchData();
+      forceRefetch();
     } catch (error) {
       console.error("Error updating paid status:", error);
       const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
@@ -148,7 +151,7 @@ export default function Home() {
           variant: 'destructive'
         });
       }
-      await fetchData();
+      forceRefetch();
     } catch (error) {
        const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
        toast({
@@ -227,7 +230,7 @@ export default function Home() {
           });
         }
       }
-      await fetchData();
+      forceRefetch();
     } catch (error) {
       console.error(error);
       const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";
