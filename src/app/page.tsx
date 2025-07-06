@@ -209,7 +209,7 @@ export default function Home() {
           
           for (let i = 0; i < installments; i++) {
             const newDate = addMonths(startDate, i);
-            const newDescription = installments > 1 
+            const newDescription = installments > 1 && dataToAdd.type === 'expense'
               ? `${dataToAdd.description} (${i + 1}/${installments})`
               : dataToAdd.description;
             
