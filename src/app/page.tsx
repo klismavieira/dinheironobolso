@@ -13,7 +13,6 @@ import {
   type Categories,
   getTransactionsForPeriod,
   getTotalTransactionCount,
-  onTransactionsUpdate,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -54,6 +53,9 @@ export default function Home() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [previousBalance, setPreviousBalance] = useState(0);
   const [totalTransactionsCount, setTotalTransactionsCount] = useState<number | null>(null);
+  const [version, setVersion] = useState(0);
+
+  const forceRefetch = () => setVersion(v => v + 1);
 
   useEffect(() => {
     // This effect runs only on the client, after hydration, to avoid mismatch
@@ -80,34 +82,30 @@ export default function Home() {
 
   useEffect(() => {
     if (!dateRange?.from || !dateRange?.to) {
-      setTransactions([]); // Clear transactions if date range is cleared
+      setTransactions([]);
       return;
     }
 
-    setLoading(true);
-    // onTransactionsUpdate returns an unsubscribe function that we'll call on cleanup
-    const unsubscribe = onTransactionsUpdate(
-      dateRange.from,
-      dateRange.to,
-      (updatedTransactions) => {
-        // The listener provides the real-time, sorted data
-        setTransactions(updatedTransactions);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Failed to subscribe to transactions:", error);
+    const fetchTransactions = async () => {
+      setLoading(true);
+      try {
+        const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+        setTransactions(fetchedTransactions);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
         toast({
           title: "Erro ao carregar transações",
-          description: error.message,
+          description,
           variant: "destructive",
         });
+      } finally {
         setLoading(false);
       }
-    );
+    };
 
-    // Return the unsubscribe function to be called when the component unmounts or the dateRange changes
-    return () => unsubscribe();
-  }, [dateRange]);
+    fetchTransactions();
+  }, [dateRange, version]);
 
   useEffect(() => {
     if (!dateRange?.from) {
@@ -146,7 +144,7 @@ export default function Home() {
     };
 
     calculatePreviousBalance();
-  }, [dateRange]);
+  }, [dateRange, version]);
   
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
@@ -197,7 +195,6 @@ export default function Home() {
         title: "Status alterado!",
         description: "O status de pagamento da transação foi atualizado.",
       });
-      // No manual re-fetch needed, onSnapshot handles the update.
     } catch (error) {
       console.error("Error updating paid status:", error);
       const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
@@ -208,6 +205,7 @@ export default function Home() {
       });
     } finally {
       setTransactionToTogglePaid(null);
+      forceRefetch();
     }
   };
 
@@ -230,7 +228,6 @@ export default function Home() {
           variant: 'destructive'
         });
       }
-       // No manual re-fetch needed, onSnapshot handles the update.
     } catch (error) {
        const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
        toast({
@@ -240,6 +237,7 @@ export default function Home() {
       });
     } finally {
       setTransactionToDelete(null);
+      forceRefetch();
     }
   };
   
@@ -314,7 +312,7 @@ export default function Home() {
           });
         }
       }
-       // No manual re-fetch needed, onSnapshot handles the update.
+      forceRefetch();
     } catch (error) {
       console.error(error);
       const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";
