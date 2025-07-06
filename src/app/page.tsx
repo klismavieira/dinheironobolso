@@ -147,7 +147,7 @@ export default function Home() {
       await updateTransaction(transactionToTogglePaid.id, { isPaid: !transactionToTogglePaid.isPaid });
       toast({
         title: "Status alterado!",
-        description: "O status de pagamento da transação foi atualizado.",
+        description: `O status de ${transactionToTogglePaid.type === 'income' ? 'recebimento' : 'pagamento'} da transação foi atualizado.`,
       });
       forceRefetch();
     } catch (error) {
@@ -394,6 +394,7 @@ export default function Home() {
           <div className="grid gap-4 md:gap-8 md:grid-cols-2">
             <TransactionList
               title="Receitas"
+              type="income"
               transactions={incomeTransactions}
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
@@ -401,6 +402,7 @@ export default function Home() {
             />
             <TransactionList
               title="Despesas"
+              type="expense"
               transactions={expenseTransactions}
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
@@ -489,7 +491,7 @@ export default function Home() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Alteração</AlertDialogTitle>
             <AlertDialogDescription>
-              Você deseja alterar o status de pagamento desta transação?
+              Você deseja alterar o status de {transactionToTogglePaid?.type === 'income' ? 'recebimento' : 'pagamento'} desta transação?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

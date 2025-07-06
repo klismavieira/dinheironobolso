@@ -94,7 +94,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <Card className="shadow-none border-dashed">
             <CardContent className="p-3">
               <div className="flex flex-row items-center justify-between space-y-0 mb-1">
-                <p className="text-xs font-medium text-muted-foreground">Receitas Pagas</p>
+                <p className="text-xs font-medium text-muted-foreground">Receitas Recebidas</p>
                 <CheckCircle2 className="h-4 w-4 text-accent" />
               </div>
               <div className="text-lg font-bold">{formatCurrency(paidIncome)}</div>

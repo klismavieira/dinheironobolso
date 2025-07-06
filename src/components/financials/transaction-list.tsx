@@ -18,9 +18,10 @@ interface TransactionListProps {
   onEdit: (transaction: Transaction) => void;
   onDelete: (transaction: Transaction) => void;
   onTogglePaid: (transaction: Transaction) => void;
+  type: 'income' | 'expense';
 }
 
-export function TransactionList({ title, transactions, onEdit, onDelete, onTogglePaid }: TransactionListProps) {
+export function TransactionList({ title, transactions, onEdit, onDelete, onTogglePaid, type }: TransactionListProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -38,6 +39,9 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
     // This only runs on the client, avoiding server/client mismatch
     setToday(startOfDay(new Date()));
   }, []);
+
+  const paidLabel = type === 'income' ? 'Recebido' : 'Pago';
+  const togglePaidLabel = type === 'income' ? 'Marcar como recebido' : 'Marcar como pago';
 
   return (
     <Card className="flex flex-col h-full">
@@ -59,7 +63,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
                             id={`paid-${transaction.id}`}
                             checked={transaction.isPaid}
                             onCheckedChange={() => onTogglePaid(transaction)}
-                            aria-label="Marcar como pago"
+                            aria-label={togglePaidLabel}
                             className="mt-1"
                           />
                           <div className="space-y-1">
@@ -71,7 +75,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
                               {transaction.installment && <Badge variant="secondary">{transaction.installment}</Badge>}
                               <span>{formatDate(transaction.date)}</span>
                               {isLate && <Badge variant="destructive">Atrasado</Badge>}
-                              {transaction.isPaid && <Badge className="border-transparent bg-accent text-accent-foreground hover:bg-accent/90">Pago</Badge>}
+                              {transaction.isPaid && <Badge className="border-transparent bg-accent text-accent-foreground hover:bg-accent/90">{paidLabel}</Badge>}
                             </div>
                           </div>
                         </div>
