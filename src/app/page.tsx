@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import type { Transaction } from '@/lib/types';
 import {
-  onTransactionsUpdate,
   addTransaction,
   updateTransaction,
   updateFutureTransactions,
@@ -77,36 +76,35 @@ export default function Home() {
       }
     };
     fetchTotalCount();
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
-    // Only fetch transactions when dateRange is defined
+    // Fetch transactions when dateRange is defined
     if (!dateRange?.from || !dateRange?.to) {
-        return; // Keep loading until dateRange is initialized
+      return;
     }
 
-    setLoading(true);
-    const unsubscribe = onTransactionsUpdate(
-      dateRange.from,
-      dateRange.to,
-      (updatedTransactions) => {
-        setTransactions(updatedTransactions);
-        setLoading(false);
-      },
-      (error) => {
+    const fetchTransactions = async () => {
+      setLoading(true);
+      try {
+        const data = await getTransactionsForPeriod(dateRange.from!, dateRange.to!);
+        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
+        setTransactions(sortedData);
+      } catch (error) {
         console.error("Error fetching transactions:", error);
+        const description = error instanceof Error ? error.message : "Não foi possível buscar as transações.";
         toast({
-          title: "Erro ao buscar transações",
-          description: error.message,
+          title: "Erro ao buscar dados",
+          description,
           variant: "destructive",
         });
+      } finally {
         setLoading(false);
       }
-    );
+    };
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [dateRange]);
+    fetchTransactions();
+  }, [dateRange, toast]);
 
   useEffect(() => {
     if (!dateRange?.from) {
