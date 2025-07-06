@@ -1,6 +1,6 @@
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
-import { Home, LineChart } from 'lucide-react';
+import { Home, LineChart, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 export function Header() {
@@ -25,6 +25,12 @@ export function Header() {
               <Link href="/dashboard">
                 <LineChart className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Dashboard</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/credit-cards">
+                <CreditCard className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Cartões</span>
               </Link>
             </Button>
           </nav>

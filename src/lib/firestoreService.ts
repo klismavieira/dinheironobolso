@@ -15,12 +15,15 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Transaction } from './types';
+import type { Transaction, CreditCard, CardExpense } from './types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from './constants';
-import { startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 
 const TRANSACTIONS_COLLECTION = 'transactions';
 const CATEGORIES_COLLECTION = 'categories';
+const CREDIT_CARDS_COLLECTION = 'credit_cards';
+const CARD_EXPENSES_SUBCOLLECTION = 'expenses';
+
 
 // Helper to convert Firestore data to Transaction type
 const fromFirestore = (docSnapshot: any): Transaction => {
@@ -122,8 +125,6 @@ export const deleteTransaction = async (id: string): Promise<void> => {
 };
 
 export const deleteFutureTransactions = async (seriesId: string, fromDate: Date): Promise<void> => {
-  // 1. Query for ALL transactions in the series, ignoring the date in the query.
-  // This avoids unreliable timestamp comparisons in the where clause.
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
     where('seriesId', '==', seriesId)
@@ -132,21 +133,17 @@ export const deleteFutureTransactions = async (seriesId: string, fromDate: Date)
   const querySnapshot = await getDocs(q);
   const batch = writeBatch(db);
   
-  // Get the exact time in milliseconds for a reliable comparison.
   const fromTime = fromDate.getTime();
 
-  // 2. Filter the results in the application code, which is 100% reliable.
   querySnapshot.forEach(doc => {
     const transaction = fromFirestore(doc);
     const transactionTime = transaction.date.getTime();
 
-    // 3. If the transaction date is on or after the selected one, add it to the delete batch.
     if (transactionTime >= fromTime) {
       batch.delete(doc.ref);
     }
   });
   
-  // 4. Commit the batch delete.
   await batch.commit();
 };
 
@@ -166,7 +163,6 @@ export const onCategoriesUpdate = (
     async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Use Set to remove duplicates
         const categories: Categories = {
           income: [...new Set([...INCOME_CATEGORIES, ...(data.income || [])])],
           expense: [...new Set([...EXPENSE_CATEGORIES, ...(data.expense || [])])]
@@ -178,7 +174,6 @@ export const onCategoriesUpdate = (
           expense: EXPENSE_CATEGORIES,
         };
         try {
-          // Initialize with empty arrays for user-defined categories
           await setDoc(docRef, { income: [], expense: [] });
           onUpdate(defaultCategories);
         } catch(e) {
@@ -204,4 +199,136 @@ export const addCategory = async (type: 'income' | 'expense', newCategory: strin
   await updateDoc(docRef, {
     [fieldToUpdate]: arrayUnion(newCategory),
   });
+};
+
+// --- Credit Card Functions ---
+
+export const onCreditCardsUpdate = (
+  onUpdate: (cards: CreditCard[]) => void,
+  onError: (error: Error) => void
+) => {
+  const q = query(collection(db, CREDIT_CARDS_COLLECTION), orderBy('name'));
+
+  const unsubscribe = onSnapshot(
+    q,
+    (querySnapshot) => {
+      const cards = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CreditCard));
+      onUpdate(cards);
+    },
+    (error) => {
+      console.error('Error listening to credit card updates:', error);
+      onError(error);
+    }
+  );
+
+  return unsubscribe;
+};
+
+export const addCreditCard = async (cardData: Omit<CreditCard, 'id'>): Promise<void> => {
+  await addDoc(collection(db, CREDIT_CARDS_COLLECTION), cardData);
+};
+
+export const updateCreditCard = async (id: string, cardData: Partial<Omit<CreditCard, 'id'>>): Promise<void> => {
+  await updateDoc(doc(db, CREDIT_CARDS_COLLECTION, id), cardData);
+};
+
+export const deleteCreditCard = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, CREDIT_CARDS_COLLECTION, id));
+};
+
+
+// --- Card Expense Functions ---
+
+const fromFirestoreCardExpense = (docSnapshot: any): CardExpense => {
+  const data = docSnapshot.data();
+  return {
+    id: docSnapshot.id,
+    ...data,
+    date: (data.date as Timestamp).toDate(),
+  } as CardExpense;
+};
+
+export const onCardExpensesUpdate = (
+  cardId: string,
+  billingCycle: string, // YYYY-MM
+  onUpdate: (expenses: CardExpense[]) => void,
+  onError: (error: Error) => void
+) => {
+  const expensesCollectionRef = collection(db, CREDIT_CARDS_COLLECTION, cardId, CARD_EXPENSES_SUBCOLLECTION);
+  const q = query(
+    expensesCollectionRef,
+    where('billingCycle', '==', billingCycle),
+    orderBy('date', 'desc')
+  );
+
+  const unsubscribe = onSnapshot(
+    q,
+    (querySnapshot) => {
+      const expenses = querySnapshot.docs.map(fromFirestoreCardExpense);
+      onUpdate(expenses);
+    },
+    (error) => {
+      console.error('Error listening to card expense updates:', error);
+      onError(error);
+    }
+  );
+
+  return unsubscribe;
+};
+
+export const addCardExpense = async (cardId: string, expenseData: Omit<CardExpense, 'id'>): Promise<void> => {
+  const expensesCollectionRef = collection(db, CREDIT_CARDS_COLLECTION, cardId, CARD_EXPENSES_SUBCOLLECTION);
+  await addDoc(expensesCollectionRef, expenseData);
+};
+
+export const deleteCardExpense = async (cardId: string, expenseId: string): Promise<void> => {
+  const expenseDocRef = doc(db, CREDIT_CARDS_COLLECTION, cardId, CARD_EXPENSES_SUBCOLLECTION, expenseId);
+  await deleteDoc(expenseDocRef);
+};
+
+export const closeCreditCardBill = async (
+  card: CreditCard,
+  billingCycle: string // YYYY-MM
+): Promise<void> => {
+  const expensesCollectionRef = collection(db, CREDIT_CARDS_COLLECTION, card.id, CARD_EXPENSES_SUBCOLLECTION);
+  const q = query(
+    expensesCollectionRef,
+    where('billingCycle', '==', billingCycle),
+    where('isBilled', '==', false)
+  );
+
+  const querySnapshot = await getDocs(q);
+  const expensesToBill = querySnapshot.docs.map(fromFirestoreCardExpense);
+
+  if (expensesToBill.length === 0) {
+    throw new Error('Não há despesas para faturar neste ciclo.');
+  }
+
+  const totalAmount = expensesToBill.reduce((sum, expense) => sum + expense.amount, 0);
+
+  const [year, month] = billingCycle.split('-').map(Number);
+  const dueDate = new Date(year, month - 1, card.dueDay);
+  
+  if (card.dueDay < card.closingDay) {
+    dueDate.setMonth(dueDate.getMonth() + 1);
+  }
+  
+  const billTransaction: Omit<Transaction, 'id' | 'seriesId' | 'installment'> = {
+    type: 'expense',
+    amount: totalAmount,
+    category: 'Fatura do Cartão',
+    description: `Fatura ${card.name} - Venc. ${format(dueDate, 'dd/MM/yyyy')}`,
+    date: dueDate,
+    isPaid: false,
+  };
+
+  await addTransaction(billTransaction);
+
+  const batch = writeBatch(db);
+  expensesToBill.forEach(expense => {
+    const expenseDocRef = doc(db, CREDIT_CARDS_COLLECTION, card.id, CARD_EXPENSES_SUBCOLLECTION, expense.id);
+    batch.update(expenseDocRef, { isBilled: true });
+  });
+
+  await batch.commit();
 };
