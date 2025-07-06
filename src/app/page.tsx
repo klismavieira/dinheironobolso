@@ -12,6 +12,7 @@ import {
   addTransactionsBatch,
   onCategoriesUpdate,
   type Categories,
+  getTransactionsForPeriod,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { Header } from '@/components/layout/header';
@@ -32,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths, startOfDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths, subMonths, startOfDay } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
@@ -52,6 +53,7 @@ export default function Home() {
   const [transactionToTogglePaid, setTransactionToTogglePaid] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [previousBalance, setPreviousBalance] = useState(0);
 
   useEffect(() => {
     // This effect runs only on the client, after hydration, to avoid mismatch
@@ -88,6 +90,44 @@ export default function Home() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
+  }, [dateRange, toast]);
+
+  useEffect(() => {
+    if (!dateRange?.from) {
+      setPreviousBalance(0);
+      return;
+    };
+
+    const calculatePreviousBalance = async () => {
+      try {
+        const prevMonth = subMonths(dateRange.from, 1);
+        const prevMonthStart = startOfMonth(prevMonth);
+        const prevMonthEnd = endOfMonth(prevMonth);
+
+        const prevMonthTransactions = await getTransactionsForPeriod(prevMonthStart, prevMonthEnd);
+        
+        const income = prevMonthTransactions
+          .filter(t => t.type === 'income')
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        const expenses = prevMonthTransactions
+          .filter(t => t.type === 'expense')
+          .reduce((sum, t) => sum + t.amount, 0);
+
+        setPreviousBalance(income - expenses);
+
+      } catch (error) {
+        console.error("Error calculating previous balance:", error);
+        toast({
+          title: "Erro ao calcular saldo anterior",
+          description: "Não foi possível buscar os dados do mês anterior.",
+          variant: "destructive",
+        });
+        setPreviousBalance(0); // Reset on error
+      }
+    };
+
+    calculatePreviousBalance();
   }, [dateRange, toast]);
   
   useEffect(() => {
@@ -361,7 +401,7 @@ export default function Home() {
             <Skeleton className="h-[125px] w-full" />
           </div>
         ) : (
-          <FinancialSummary transactions={transactions} />
+          <FinancialSummary transactions={transactions} previousBalance={previousBalance} />
         )}
 
         <div className="flex items-center justify-end gap-2">

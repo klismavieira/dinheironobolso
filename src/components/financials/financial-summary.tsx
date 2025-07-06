@@ -2,13 +2,14 @@
 
 import type { Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Scale, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Scale, CheckCircle2, Banknote } from 'lucide-react';
 
 interface FinancialSummaryProps {
   transactions: Transaction[];
+  previousBalance: number;
 }
 
-export function FinancialSummary({ transactions }: FinancialSummaryProps) {
+export function FinancialSummary({ transactions, previousBalance }: FinancialSummaryProps) {
   const totalIncome = transactions
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -25,7 +26,7 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
     .filter((t) => t.type === 'expense' && t.isPaid)
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const balance = totalIncome - totalExpenses;
+  const balance = previousBalance + totalIncome - totalExpenses;
   const paidBalance = paidIncome - paidExpenses;
 
   const formatCurrency = (amount: number) => {
@@ -39,10 +40,22 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
     <div className="flex flex-col gap-8">
       <div>
         <h2 className="text-xl font-semibold mb-4 text-foreground">Resumo do Período</h2>
-        <div className="grid gap-4 md:grid-cols-3 md:gap-8">
+        <div className="grid gap-4 md:grid-cols-4 md:gap-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Saldo Anterior</CardTitle>
+              <Banknote className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${previousBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+                {formatCurrency(previousBalance)}
+              </div>
+              <p className="text-xs text-muted-foreground">Saldo do mês anterior</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Receita do Mês</CardTitle>
               <TrendingUp className="h-5 w-5 text-accent" />
             </CardHeader>
             <CardContent>
@@ -52,7 +65,7 @@ export function FinancialSummary({ transactions }: FinancialSummaryProps) {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Despesa Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Despesa do Mês</CardTitle>
               <TrendingDown className="h-5 w-5 text-destructive" />
             </CardHeader>
             <CardContent>

@@ -60,6 +60,17 @@ export const onTransactionsUpdate = (
   return unsubscribe;
 };
 
+export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
+  const q = query(
+    collection(db, TRANSACTIONS_COLLECTION),
+    where('date', '>=', startDate),
+    where('date', '<=', endDate)
+  );
+
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(fromFirestore);
+};
+
 export const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'seriesId' | 'installment'>): Promise<void> => {
   await addDoc(collection(db, TRANSACTIONS_COLLECTION), transactionData);
 };
