@@ -79,10 +79,11 @@ interface TransactionDialogProps {
 }
 
 const toYYYYMMDD = (date: Date) => {
-  const d = new Date(date);
-  // Adjust for timezone offset to get the correct local date
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().split('T')[0];
+  // Using local date components is safer against timezone issues.
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 export function TransactionDialog({ open, onOpenChange, transaction, onSave, categories }: TransactionDialogProps) {
@@ -222,7 +223,14 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
                             type="date"
                             {...field}
                             value={field.value instanceof Date ? toYYYYMMDD(field.value) : ''}
-                            onChange={e => field.onChange(e.target.valueAsDate)}
+                            onChange={e => {
+                              // Manually construct date from string to avoid timezone issues.
+                              // e.target.value is "YYYY-MM-DD", which we want to interpret as local time, not UTC.
+                              // `new Date(`${e.target.value}T00:00:00`)` interprets it as local time.
+                              if (e.target.value) {
+                                field.onChange(new Date(`${e.target.value}T00:00:00`));
+                              }
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
