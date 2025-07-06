@@ -12,7 +12,6 @@ import {
   onCategoriesUpdate,
   type Categories,
   getTransactionsForPeriod,
-  getIncomeForPeriod,
   getTotalTransactionCount,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
@@ -63,7 +62,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const fetchedTransactions = await getIncomeForPeriod(dateRange.from, dateRange.to);
+      const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
       setTransactions(fetchedTransactions);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
@@ -320,6 +319,7 @@ export default function Home() {
   };
   
   const incomeTransactions = transactions.filter((t) => t.type === 'income');
+  const expenseTransactions = transactions.filter((t) => t.type === 'expense');
 
   const handleMonthClick = (monthIndex: number) => {
     const referenceDate = dateRange?.from || new Date();
@@ -423,22 +423,34 @@ export default function Home() {
         />
       )}
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
           <Button onClick={() => handleAddTransaction('income')}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Adicionar Receita
           </Button>
+          <Button variant="secondary" onClick={() => handleAddTransaction('expense')}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Despesa
+          </Button>
       </div>
 
       {loading ? (
-          <div className="grid gap-4 md:gap-8 md:grid-cols-1">
+          <div className="grid gap-4 md:gap-8 md:grid-cols-2">
+              <Skeleton className="h-[522px] w-full" />
               <Skeleton className="h-[522px] w-full" />
           </div>
       ) : (
-          <div className="grid gap-4 md:gap-8 md:grid-cols-1">
+          <div className="grid gap-4 md:gap-8 md:grid-cols-2">
             <TransactionList
               title="Receitas"
               transactions={incomeTransactions}
+              onEdit={handleEditTransaction}
+              onDelete={handleDeleteTransaction}
+              onTogglePaid={handleTogglePaidStatus}
+            />
+            <TransactionList
+              title="Despesas"
+              transactions={expenseTransactions}
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
               onTogglePaid={handleTogglePaidStatus}
