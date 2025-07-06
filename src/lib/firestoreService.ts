@@ -1,3 +1,5 @@
+'use client';
+
 import {
   collection,
   addDoc,
@@ -21,13 +23,16 @@ const TRANSACTIONS_COLLECTION = 'transactions';
 const CATEGORIES_COLLECTION = 'categories';
 
 
-// Helper to convert Firestore data to Transaction type
-const fromFirestore = (docSnapshot: any): Transaction => {
+// Helper to convert Firestore data to Transaction type. Returns null if data is invalid.
+const fromFirestore = (docSnapshot: any): Transaction | null => {
   const data = docSnapshot.data();
-  // Add robust check for data and date field
+  // Add robust check for data and date field. Malformed data can break the app.
   if (!data || !data.date || typeof data.date.toDate !== 'function') {
-    console.error('Invalid transaction data found, missing or invalid date:', docSnapshot.id, data);
-    throw new Error(`O documento de transação com ID ${docSnapshot.id} é inválido ou não possui uma data.`);
+    console.warn(
+      `Skipping invalid transaction document (ID: ${docSnapshot.id}). It's missing a valid 'date' field.`,
+      data
+    );
+    return null;
   }
   return {
     id: docSnapshot.id,
@@ -48,7 +53,10 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
 
   try {
     const querySnapshot = await getDocs(q);
-    const transactions = querySnapshot.docs.map(fromFirestore);
+    const transactions = querySnapshot.docs
+      .map(fromFirestore)
+      .filter((t): t is Transaction => t !== null); // Filter out any invalid documents
+
     // Sort on client to avoid needing a composite index
     transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
     return transactions;
@@ -66,7 +74,10 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
 
   try {
     const querySnapshot = await getDocs(q);
-    const transactions = querySnapshot.docs.map(fromFirestore);
+    const transactions = querySnapshot.docs
+      .map(fromFirestore)
+      .filter((t): t is Transaction => t !== null); // Filter out any invalid documents
+      
     // Sort on client to avoid needing a composite index
     transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
     return transactions;
@@ -154,10 +165,12 @@ export const updateFutureTransactions = async (
 
     querySnapshot.forEach(doc => {
       const transaction = fromFirestore(doc);
-      const transactionTime = transaction.date.getTime();
+      if (transaction) {
+        const transactionTime = transaction.date.getTime();
 
-      if (transactionTime >= fromTime) {
-        batch.update(doc.ref, newData);
+        if (transactionTime >= fromTime) {
+          batch.update(doc.ref, newData);
+        }
       }
     });
     
@@ -198,10 +211,12 @@ export const deleteFutureTransactions = async (seriesId: string, fromDate: Date)
 
     querySnapshot.forEach(doc => {
       const transaction = fromFirestore(doc);
-      const transactionTime = transaction.date.getTime();
+      if (transaction) {
+        const transactionTime = transaction.date.getTime();
 
-      if (transactionTime >= fromTime) {
-        batch.delete(doc.ref);
+        if (transactionTime >= fromTime) {
+          batch.delete(doc.ref);
+        }
       }
     });
     
