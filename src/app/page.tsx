@@ -80,7 +80,7 @@ export default function Home() {
         console.error("Error fetching transactions:", error);
         toast({
           title: "Erro ao buscar transações",
-          description: "Não foi possível carregar os dados. Tente novamente mais tarde.",
+          description: error.message,
           variant: "destructive",
         });
         setLoading(false);
@@ -117,9 +117,10 @@ export default function Home() {
 
       } catch (error) {
         console.error("Error calculating previous balance:", error);
+        const description = error instanceof Error ? error.message : "Não foi possível buscar os dados do mês anterior.";
         toast({
           title: "Erro ao calcular saldo anterior",
-          description: "Não foi possível buscar os dados do mês anterior.",
+          description,
           variant: "destructive",
         });
         setPreviousBalance(0); // Reset on error
@@ -138,7 +139,7 @@ export default function Home() {
         console.error("Error fetching categories:", error);
         toast({
           title: "Erro ao buscar categorias",
-          description: "Não foi possível carregar as categorias personalizadas.",
+          description: error.message,
           variant: "destructive",
         });
       }
@@ -180,9 +181,10 @@ export default function Home() {
       });
     } catch (error) {
       console.error("Error updating paid status:", error);
+      const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
       toast({
         title: "Erro ao atualizar status",
-        description: "Não foi possível alterar o status da transação.",
+        description,
         variant: "destructive",
       });
     } finally {
@@ -210,9 +212,10 @@ export default function Home() {
         });
       }
     } catch (error) {
+       const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
        toast({
         title: "Erro ao excluir",
-        description: "Não foi possível remover a(s) transação(ões).",
+        description,
         variant: "destructive",
       });
     } finally {
@@ -293,9 +296,10 @@ export default function Home() {
       }
     } catch (error) {
       console.error(error);
+      const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar a transação.",
+        description,
         variant: "destructive",
       });
     }

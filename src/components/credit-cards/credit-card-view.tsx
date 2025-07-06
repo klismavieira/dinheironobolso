@@ -43,7 +43,7 @@ export function CreditCardView({ card, onEdit, onDelete, onAddExpense }: CreditC
             },
             (error) => {
                 console.error(error);
-                toast({ title: "Erro ao buscar despesas do cartão", variant: "destructive" });
+                toast({ title: "Erro ao buscar despesas do cartão", description: error.message, variant: "destructive" });
                 setLoading(false);
             }
         );
@@ -61,7 +61,8 @@ export function CreditCardView({ card, onEdit, onDelete, onAddExpense }: CreditC
                 toast({ title: "Despesa do cartão excluída!" });
             }
         } catch (error) {
-            toast({ title: "Erro ao excluir despesa", variant: "destructive" });
+            const description = error instanceof Error ? error.message : "Tente novamente.";
+            toast({ title: "Erro ao excluir despesa", description, variant: "destructive" });
         } finally {
             setExpenseToDelete(null);
         }

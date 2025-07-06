@@ -79,7 +79,7 @@ export const addTransaction = async (transactionData: Omit<Transaction, 'id' | '
     await addDoc(collection(db, TRANSACTIONS_COLLECTION), transactionData);
   } catch (error) {
     console.error("Firebase Error: Failed to add transaction.", error);
-    throw new Error("Não foi possível adicionar a transação.");
+    throw new Error("Não foi possível adicionar a transação. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -93,7 +93,7 @@ export const addTransactionsBatch = async (transactions: Omit<Transaction, 'id'>
     await batch.commit();
   } catch (error) {
     console.error("Firebase Error: Failed to add transactions batch.", error);
-    throw new Error("Não foi possível adicionar as transações recorrentes.");
+    throw new Error("Não foi possível adicionar as transações recorrentes. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -103,7 +103,7 @@ export const updateTransaction = async (id: string, transactionData: Partial<Omi
     await updateDoc(transactionRef, transactionData);
   } catch (error) {
     console.error("Firebase Error: Failed to update transaction.", error);
-    throw new Error("Não foi possível atualizar a transação.");
+    throw new Error("Não foi possível atualizar a transação. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -135,7 +135,7 @@ export const updateFutureTransactions = async (
     await batch.commit();
   } catch (error) {
     console.error("Firebase Error: Failed to update future transactions.", error);
-    throw new Error("Não foi possível atualizar as transações futuras.");
+    throw new Error("Não foi possível atualizar as transações futuras. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -145,7 +145,7 @@ export const deleteTransaction = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, TRANSACTIONS_COLLECTION, id));
   } catch (error) {
     console.error("Firebase Error: Failed to delete transaction.", error);
-    throw new Error("Não foi possível excluir a transação.");
+    throw new Error("Não foi possível excluir a transação. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -173,7 +173,7 @@ export const deleteFutureTransactions = async (seriesId: string, fromDate: Date)
     await batch.commit();
   } catch (error) {
     console.error("Firebase Error: Failed to delete future transactions.", error);
-    throw new Error("Não foi possível excluir as transações futuras.");
+    throw new Error("Não foi possível excluir as transações futuras. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -232,7 +232,7 @@ export const addCategory = async (type: 'income' | 'expense', newCategory: strin
     });
   } catch (error) {
     console.error("Firebase Error: Failed to add category.", error);
-    throw new Error("Não foi possível adicionar a nova categoria.");
+    throw new Error("Não foi possível adicionar a nova categoria. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -264,7 +264,7 @@ export const addCreditCard = async (cardData: Omit<CreditCard, 'id'>): Promise<v
     await addDoc(collection(db, CREDIT_CARDS_COLLECTION), cardData);
   } catch (error) {
     console.error("Firebase Error: Failed to add credit card.", error);
-    throw new Error("Não foi possível adicionar o cartão. Verifique sua conexão ou as permissões do banco de dados.");
+    throw new Error("Não foi possível adicionar o cartão. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -273,7 +273,7 @@ export const updateCreditCard = async (id: string, cardData: Partial<Omit<Credit
     await updateDoc(doc(db, CREDIT_CARDS_COLLECTION, id), cardData);
   } catch(error) {
     console.error("Firebase Error: Failed to update credit card.", error);
-    throw new Error("Não foi possível atualizar o cartão. Verifique sua conexão ou as permissões do banco de dados.");
+    throw new Error("Não foi possível atualizar o cartão. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -282,7 +282,7 @@ export const deleteCreditCard = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, CREDIT_CARDS_COLLECTION, id));
   } catch (error) {
     console.error("Firebase Error: Failed to delete credit card.", error);
-    throw new Error("Não foi possível excluir o cartão.");
+    throw new Error("Não foi possível excluir o cartão. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -332,7 +332,7 @@ export const addCardExpense = async (cardId: string, expenseData: Omit<CardExpen
     await addDoc(expensesCollectionRef, expenseData);
   } catch (error) {
     console.error("Firebase Error: Failed to add card expense.", error);
-    throw new Error("Não foi possível adicionar a despesa ao cartão.");
+    throw new Error("Não foi possível adicionar a despesa ao cartão. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -347,7 +347,7 @@ export const addCardExpensesBatch = async (cardId:string, expensesData: Omit<Car
     await batch.commit();
   } catch (error) {
     console.error("Firebase Error: Failed to add card expenses batch.", error);
-    throw new Error("Não foi possível adicionar a assinatura ao cartão.");
+    throw new Error("Não foi possível adicionar a assinatura ao cartão. Verifique sua conexão ou permissões.");
   }
 }
 
@@ -357,7 +357,7 @@ export const deleteCardExpense = async (cardId: string, expenseId: string): Prom
     await deleteDoc(expenseDocRef);
   } catch (error) {
     console.error("Firebase Error: Failed to delete card expense.", error);
-    throw new Error("Não foi possível excluir a despesa do cartão.");
+    throw new Error("Não foi possível excluir a despesa do cartão. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -386,7 +386,7 @@ export const deleteFutureCardExpenses = async (cardId: string, seriesId: string,
     await batch.commit();
   } catch (error) {
     console.error("Firebase Error: Failed to delete future card expenses.", error);
-    throw new Error("Não foi possível excluir as despesas futuras.");
+    throw new Error("Não foi possível excluir as despesas futuras. Verifique sua conexão ou permissões.");
   }
 };
 
@@ -441,6 +441,6 @@ export const closeCreditCardBill = async (
      if (error instanceof Error) {
         throw new Error(`Não foi possível fechar a fatura: ${error.message}`);
      }
-     throw new Error('Não foi possível fechar a fatura.');
+     throw new Error('Não foi possível fechar a fatura. Verifique sua conexão ou permissões.');
   }
 };

@@ -47,7 +47,7 @@ export default function CreditCardsPage() {
       },
       (error) => {
         console.error("Error fetching credit cards:", error);
-        toast({ title: "Erro ao buscar cartões", variant: "destructive" });
+        toast({ title: "Erro ao buscar cartões", description: error.message, variant: "destructive" });
         setLoading(false);
       }
     );
@@ -57,9 +57,10 @@ export default function CreditCardsPage() {
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(setCategories, (error) => {
         console.error("Error fetching categories:", error);
+        toast({ title: "Erro ao buscar categorias", description: error.message, variant: "destructive" });
     });
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleAddCard = () => {
     setCurrentCard({});
@@ -84,7 +85,8 @@ export default function CreditCardsPage() {
       }
     } catch (error) {
       console.error("Error saving card:", error);
-      toast({ title: "Erro ao salvar cartão", variant: "destructive" });
+      const description = error instanceof Error ? error.message : "Tente novamente.";
+      toast({ title: "Erro ao salvar cartão", description, variant: "destructive" });
     }
   };
   
@@ -94,7 +96,8 @@ export default function CreditCardsPage() {
         await deleteCreditCard(cardToDelete);
         toast({ title: "Cartão excluído!", variant: 'destructive' });
     } catch(error) {
-        toast({ title: "Erro ao excluir cartão", variant: 'destructive' });
+        const description = error instanceof Error ? error.message : "Tente novamente.";
+        toast({ title: "Erro ao excluir cartão", description, variant: 'destructive' });
     } finally {
         setCardToDelete(null);
     }
@@ -163,7 +166,8 @@ export default function CreditCardsPage() {
 
     } catch (error) {
       console.error("Error saving card expense:", error);
-      toast({ title: "Erro ao salvar despesa do cartão", variant: "destructive" });
+      const description = error instanceof Error ? error.message : "Tente novamente.";
+      toast({ title: "Erro ao salvar despesa do cartão", description, variant: "destructive" });
     } finally {
       setCardForNewExpense(null);
     }

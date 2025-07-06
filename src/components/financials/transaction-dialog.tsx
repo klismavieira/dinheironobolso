@@ -168,9 +168,10 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
       setNewCategoryName('');
       setNewCategoryDialogOpen(false);
     } catch (error) {
+      const description = error instanceof Error ? error.message : "Não foi possível salvar a nova categoria.";
       toast({
         title: "Erro ao criar categoria",
-        description: "Não foi possível salvar a nova categoria.",
+        description,
         variant: "destructive",
       });
     }
