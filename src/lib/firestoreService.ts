@@ -61,6 +61,31 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
   }
 };
 
+export const getIncomeForPeriod = async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
+  const startTimestamp = Timestamp.fromDate(startDate);
+  const endTimestamp = Timestamp.fromDate(endDate);
+
+  const q = query(
+    collection(db, TRANSACTIONS_COLLECTION),
+    where('date', '>=', startTimestamp),
+    where('date', '<=', endTimestamp),
+    where('type', '==', 'income')
+  );
+
+  try {
+    const querySnapshot = await getDocs(q);
+    const transactions = querySnapshot.docs.map(fromFirestore);
+    transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+    return transactions;
+  } catch (error) {
+    console.error("Firebase Error: Failed to get income for period.", error);
+    if (error instanceof Error) {
+      throw new Error(`Não foi possível buscar as receitas do período: ${error.message}`);
+    }
+    throw new Error("Não foi possível buscar as receitas. Verifique sua conexão ou permissões.");
+  }
+};
+
 export const getTotalTransactionCount = async (): Promise<number> => {
   const q = query(collection(db, TRANSACTIONS_COLLECTION));
   try {
