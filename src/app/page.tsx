@@ -152,6 +152,9 @@ export default function Home() {
   
       if (id) {
         // --- UPDATE ---
+        // Updating recurring transactions is complex and generally not recommended in this flow.
+        // The user can delete the series and create a new one.
+        // For simplicity, we only update the single transaction.
         await updateTransaction(id, transactionData);
         toast({
           title: "Transação atualizada!",
@@ -159,7 +162,7 @@ export default function Home() {
         });
       } else {
         // --- CREATE ---
-        if (transactionData.type === 'expense' && isFixed && installments && installments >= 2) {
+        if (isFixed && installments && installments >= 2) {
           const seriesId = uuidv4();
           const batchData: Omit<Transaction, 'id'>[] = [];
           for (let i = 0; i < installments; i++) {
@@ -172,7 +175,7 @@ export default function Home() {
           }
           await addTransactionsBatch(batchData);
           toast({
-            title: "Despesas recorrentes adicionadas!",
+            title: "Transações recorrentes adicionadas!",
             description: `${installments} transações foram criadas com sucesso.`,
           });
         } else {

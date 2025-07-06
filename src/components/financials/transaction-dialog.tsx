@@ -66,7 +66,7 @@ const formSchema = z.object({
   installments: z.coerce.number().optional(),
   seriesId: z.string().optional(),
 }).refine(data => {
-    if (data.isFixed && data.type === 'expense') {
+    if (data.isFixed) {
         return data.installments && data.installments >= 2;
     }
     return true;
@@ -269,50 +269,48 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
                   </FormItem>
                 )}
               />
-               {transactionType === 'expense' && (
-                <div className="space-y-4">
-                    <FormField
-                    control={form.control}
-                    name="isFixed"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                        <FormControl>
-                            <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isEditing}
-                            />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                            Despesa Recorrente/Parcelada
-                        </FormLabel>
-                        </FormItem>
-                    )}
-                    />
-                    {isFixed && !isEditing && (
-                    <FormField
-                        control={form.control}
-                        name="installments"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Número de Parcelas</FormLabel>
-                            <FormControl>
-                            <Input
-                                type="number"
-                                placeholder="Ex: 12"
-                                min="2"
-                                disabled={isEditing}
-                                {...field}
-                                value={field.value ?? ''}
-                            />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    )}
-                </div>
-              )}
+              <div className="space-y-4">
+                  <FormField
+                  control={form.control}
+                  name="isFixed"
+                  render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                          <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isEditing}
+                          />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                          Transação Recorrente/Parcelada
+                      </FormLabel>
+                      </FormItem>
+                  )}
+                  />
+                  {isFixed && !isEditing && (
+                  <FormField
+                      control={form.control}
+                      name="installments"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Número de Parcelas</FormLabel>
+                          <FormControl>
+                          <Input
+                              type="number"
+                              placeholder="Ex: 12"
+                              min="2"
+                              disabled={isEditing}
+                              {...field}
+                              value={field.value ?? ''}
+                          />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                  )}
+              </div>
 
               <DialogFooter>
                  <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
