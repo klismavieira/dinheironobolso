@@ -104,9 +104,10 @@ export const onCategoriesUpdate = (
     async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        // Use Set to remove duplicates
         const categories: Categories = {
-          income: [...INCOME_CATEGORIES, ...(data.income || [])],
-          expense: [...EXPENSE_CATEGORIES, ...(data.expense || [])]
+          income: [...new Set([...INCOME_CATEGORIES, ...(data.income || [])])],
+          expense: [...new Set([...EXPENSE_CATEGORIES, ...(data.expense || [])])]
         };
         onUpdate(categories);
       } else {
