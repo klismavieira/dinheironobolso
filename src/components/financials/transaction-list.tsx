@@ -63,8 +63,9 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
                             <div className="text-sm flex items-center gap-2 flex-wrap">
                               <Badge variant="outline">{transaction.category}</Badge>
                               {transaction.installment && <Badge variant="secondary">{transaction.installment}</Badge>}
-                              {isLate && <Badge variant="destructive">Atrasado</Badge>}
                               <span>{formatDate(transaction.date)}</span>
+                              {isLate && <Badge variant="destructive">Atrasado</Badge>}
+                              {transaction.isPaid && <Badge className="border-transparent bg-accent text-accent-foreground hover:bg-accent/90">Pago</Badge>}
                             </div>
                           </div>
                         </div>
