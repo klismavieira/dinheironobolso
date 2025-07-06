@@ -200,7 +200,7 @@ export default function DashboardPage() {
             <Button
               id="date"
               variant={'outline'}
-              className={cn('w-[300px] justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
+              className={cn('w-full sm:w-[300px] justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {dateRange?.from ? (
@@ -244,7 +244,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-start gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 md:items-start gap-4">
         {pieLoading ? (
           <>
             <Skeleton className="h-full w-full min-h-[450px]" />

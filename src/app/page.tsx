@@ -346,7 +346,7 @@ export default function Home() {
               id="date"
               variant={"outline"}
               className={cn(
-                "w-[300px] justify-start text-left font-normal",
+                "w-full sm:w-[300px] justify-start text-left font-normal",
                 !dateRange && "text-muted-foreground"
               )}
             >

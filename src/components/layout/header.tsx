@@ -10,21 +10,21 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <Logo className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground font-sans">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground font-sans">
               Dinheiro no Bolso
             </h1>
           </div>
           <nav className="flex items-center gap-2">
             <Button variant="ghost" asChild>
               <Link href="/">
-                <Home className="mr-2 h-4 w-4" />
-                Transações
+                <Home className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Transações</span>
               </Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/dashboard">
-                <LineChart className="mr-2 h-4 w-4" />
-                Dashboard
+                <LineChart className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Dashboard</span>
               </Link>
             </Button>
           </nav>
