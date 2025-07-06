@@ -83,21 +83,31 @@ export const deleteTransaction = async (id: string): Promise<void> => {
 };
 
 export const deleteFutureTransactions = async (seriesId: string, fromDate: Date): Promise<void> => {
-  // Normalize the date to the beginning of the day to avoid timezone/precision issues.
-  const startOfFromDay = startOfDay(fromDate);
-  const fromTimestamp = Timestamp.fromDate(startOfFromDay);
-
+  // 1. Query for ALL transactions in the series, ignoring the date in the query.
+  // This avoids unreliable timestamp comparisons in the where clause.
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
-    where('seriesId', '==', seriesId),
-    where('date', '>=', fromTimestamp)
+    where('seriesId', '==', seriesId)
   );
-  
+
   const querySnapshot = await getDocs(q);
   const batch = writeBatch(db);
+  
+  // Get the exact time in milliseconds for a reliable comparison.
+  const fromTime = fromDate.getTime();
+
+  // 2. Filter the results in the application code, which is 100% reliable.
   querySnapshot.forEach(doc => {
-    batch.delete(doc.ref);
+    const transaction = fromFirestore(doc);
+    const transactionTime = transaction.date.getTime();
+
+    // 3. If the transaction date is on or after the selected one, add it to the delete batch.
+    if (transactionTime >= fromTime) {
+      batch.delete(doc.ref);
+    }
   });
+  
+  // 4. Commit the batch delete.
   await batch.commit();
 };
 
