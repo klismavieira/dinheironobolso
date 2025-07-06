@@ -63,16 +63,8 @@ const formSchema = z.object({
     return arg;
   }, z.date({ required_error: 'A data é obrigatória.' })),
   isFixed: z.boolean().default(false),
-  installments: z.coerce.number().optional(),
+  installments: z.coerce.number().min(2, 'O número de parcelas deve ser 2 ou mais.').optional(),
   seriesId: z.string().optional(),
-}).refine(data => {
-    if (data.isFixed) {
-        return data.installments && data.installments >= 2;
-    }
-    return true;
-}, {
-    message: "O número de parcelas deve ser 2 ou mais.",
-    path: ["installments"],
 });
 
 
@@ -298,13 +290,16 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
                           <FormControl>
                           <Input
                               type="number"
-                              placeholder="Ex: 12"
+                              placeholder="Padrão: 12"
                               min="2"
                               disabled={isEditing}
                               {...field}
                               value={field.value ?? ''}
                           />
                           </FormControl>
+                          <FormDescription>
+                            Deixe em branco para o padrão de 12 parcelas.
+                          </FormDescription>
                           <FormMessage />
                       </FormItem>
                       )}

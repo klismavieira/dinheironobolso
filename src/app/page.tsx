@@ -162,21 +162,22 @@ export default function Home() {
         });
       } else {
         // --- CREATE ---
-        if (isFixed && installments && installments >= 2) {
+        if (isFixed) {
+          const numInstallments = installments || 12; // Default to 12 if not provided
           const seriesId = uuidv4();
           const batchData: Omit<Transaction, 'id'>[] = [];
-          for (let i = 0; i < installments; i++) {
+          for (let i = 0; i < numInstallments; i++) {
             batchData.push({
               ...transactionData,
               date: addMonths(transactionData.date, i),
               seriesId,
-              installment: `${i + 1}/${installments}`,
+              installment: `${i + 1}/${numInstallments}`,
             });
           }
           await addTransactionsBatch(batchData);
           toast({
             title: "Transações recorrentes adicionadas!",
-            description: `${installments} transações foram criadas com sucesso.`,
+            description: `${numInstallments} transações foram criadas com sucesso.`,
           });
         } else {
           await addTransaction(transactionData);
