@@ -32,11 +32,10 @@ export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
-    // Set initial range to current year on client-side to avoid hydration mismatch
-    const today = new Date();
+    // This effect runs only on the client, after hydration, to avoid mismatch
     setDateRange({
-      from: startOfYear(today),
-      to: endOfYear(today),
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
     });
   }, []);
 
