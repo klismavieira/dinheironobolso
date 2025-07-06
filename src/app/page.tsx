@@ -176,7 +176,7 @@ export default function Home() {
 
   const handleSaveTransaction = async (values: FormValues) => {
     try {
-      const { id, isFixed, endDate } = values;
+      const { id } = values;
 
       if (id) {
         // --- UPDATE EXISTING TRANSACTION ---
@@ -194,20 +194,22 @@ export default function Home() {
         });
       } else {
         // --- CREATE NEW TRANSACTION(S) ---
-        // Create a clean copy of the values from the form.
-        const dataToSend = { ...values };
-        
-        // This is the definitive fix: explicitly remove properties that are not part
-        // of the transaction data model or are invalid for new documents.
-        // `id` is 'undefined' for new transactions and illegal in Firestore `addDoc`.
-        // `isFixed` and `endDate` are form-only fields.
-        delete (dataToSend as Partial<FormValues>).id;
-        delete dataToSend.isFixed;
-        delete dataToSend.endDate;
+        const { type, amount, description, category, date, isFixed, endDate } = values;
+
+        // Definitive fix: Build a new, clean object from scratch to ensure
+        // no invalid properties (like `id: undefined`) are ever sent.
+        const baseTransactionData: Omit<Transaction, 'id' | 'seriesId'> = {
+            type,
+            amount,
+            description,
+            category,
+            date,
+            isRecurring: false, // Default to false, will be overridden if fixed
+        };
 
         if (isFixed) {
           // RECURRING ADD
-          const startDate = dataToSend.date;
+          const startDate = baseTransactionData.date;
           const finalDate = endDate || addMonths(startDate, 11);
           
           if (finalDate < startDate) {
@@ -225,12 +227,12 @@ export default function Home() {
           const promises = [];
           for (let i = 0; i < installments; i++) {
             const newDate = addMonths(startDate, i);
-            const newDescription = installments > 1 && dataToSend.type === 'expense'
-              ? `${dataToSend.description} (${i + 1}/${installments})`
-              : dataToSend.description;
+            const newDescription = installments > 1 && type === 'expense'
+              ? `${description} (${i + 1}/${installments})`
+              : description;
             
             promises.push(addTransaction({
-              ...dataToSend,
+              ...baseTransactionData,
               date: newDate,
               description: newDescription,
               isRecurring: true,
@@ -245,7 +247,7 @@ export default function Home() {
           });
         } else {
           // SINGLE ADD
-          await addTransaction({ ...dataToSend, isRecurring: false });
+          await addTransaction(baseTransactionData);
           toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
