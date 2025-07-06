@@ -31,7 +31,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -45,7 +44,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 
 
@@ -62,21 +60,6 @@ const formSchema = z.object({
     }
     return arg;
   }, z.date({ required_error: 'A data é obrigatória.' })),
-  isFixed: z.boolean().default(false),
-  endDate: z.preprocess((arg) => {
-    if (typeof arg === 'string' && arg) {
-      return new Date(`${arg}T00:00:00`);
-    }
-    return arg;
-  }, z.date().optional()),
-}).refine(data => {
-  if (data.isFixed && data.endDate) {
-    return data.endDate.getTime() > data.date.getTime();
-  }
-  return true;
-}, {
-  message: "A data final deve ser posterior à data da transação.",
-  path: ["endDate"],
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -103,20 +86,16 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      isFixed: false,
-    }
   });
   
   const transactionType = form.watch('type');
-  const isFixed = form.watch('isFixed');
   const availableCategories = transactionType === 'income' ? categories.income : categories.expense;
   const isEditing = !!transaction?.id;
   const categoryValue = form.watch('category');
 
   useEffect(() => {
     if (open) {
-      if (isEditing && transaction) {
+      if (transaction?.id) { // isEditing
         form.reset({
           id: transaction.id,
           type: transaction.type,
@@ -124,10 +103,8 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           description: transaction.description,
           category: transaction.category,
           date: transaction.date || new Date(),
-          isFixed: false,
-          endDate: undefined,
         });
-      } else {
+      } else { // isCreating
         form.reset({
           id: undefined,
           type: transaction?.type,
@@ -135,12 +112,10 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           description: '',
           category: undefined,
           date: new Date(),
-          isFixed: false,
-          endDate: undefined,
         });
       }
     }
-  }, [open, transaction, form, isEditing]);
+  }, [open, transaction, form]);
   
   useEffect(() => {
     if (categoryValue === '_CREATE_NEW_') {
@@ -271,54 +246,6 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
                   </FormItem>
                 )}
               />
-
-              {!isEditing && (
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="isFixed"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel>Transação Fixa/Parcelada</FormLabel>
-                          <FormDescription>
-                            Marque para repetir esta transação nos próximos meses.
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  {isFixed && (
-                    <FormField
-                      control={form.control}
-                      name="endDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Data Final (Opcional)</FormLabel>
-                          <FormControl>
-                             <Input
-                                type="date"
-                                {...field}
-                                value={field.value instanceof Date ? toYYYYMMDD(field.value) : ''}
-                                onChange={e => field.onChange(e.target.valueAsDate)}
-                              />
-                          </FormControl>
-                           <FormDescription>
-                            Deixe em branco para repetir por 12 meses.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                </div>
-              )}
 
               <DialogFooter>
                  <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>

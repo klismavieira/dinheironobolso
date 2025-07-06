@@ -7,7 +7,6 @@ import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
-  deleteFutureTransactions,
   onCategoriesUpdate,
   type Categories,
 } from '@/lib/firestoreService';
@@ -30,17 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { collection, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { addMonths, differenceInCalendarMonths, format, startOfMonth, endOfMonth, setMonth, getMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, setMonth, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -54,9 +43,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> | null>(null);
-  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
-  const [deleteSingleDialogOpen, setDeleteSingleDialogOpen] = useState(false);
-  const [deleteSeriesDialogOpen, setDeleteSeriesDialogOpen] = useState(false);
+  const [transactionToDeleteId, setTransactionToDeleteId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -123,18 +110,13 @@ export default function Home() {
   };
 
   const handleDeleteTransaction = (transaction: Transaction) => {
-    setTransactionToDelete(transaction);
-    if (transaction.isRecurring && transaction.seriesId) {
-      setDeleteSeriesDialogOpen(true);
-    } else {
-      setDeleteSingleDialogOpen(true);
-    }
+    setTransactionToDeleteId(transaction.id);
   };
 
-  const handleConfirmSingleDelete = async () => {
-    if (!transactionToDelete) return;
+  const handleConfirmDelete = async () => {
+    if (!transactionToDeleteId) return;
     try {
-      await deleteTransaction(transactionToDelete.id);
+      await deleteTransaction(transactionToDeleteId);
       toast({
         title: "Transação excluída!",
         description: "A transação foi removida com sucesso.",
@@ -147,112 +129,28 @@ export default function Home() {
         variant: "destructive",
       });
     } finally {
-      setTransactionToDelete(null);
-      setDeleteSingleDialogOpen(false);
-      setDeleteSeriesDialogOpen(false); // Close both dialogs
+      setTransactionToDeleteId(null);
     }
   };
   
-  const handleConfirmSeriesDelete = async () => {
-    if (!transactionToDelete?.seriesId) return;
-    try {
-      await deleteFutureTransactions(transactionToDelete.seriesId, transactionToDelete.date);
-       toast({
-        title: "Transações futuras excluídas!",
-        description: "Esta transação e as futuras foram removidas.",
-        variant: 'destructive'
-      });
-    } catch (error) {
-       toast({
-        title: "Erro ao excluir",
-        description: "Não foi possível remover as transações recorrentes.",
-        variant: "destructive",
-      });
-    } finally {
-      setTransactionToDelete(null);
-      setDeleteSeriesDialogOpen(false);
-    }
-  };
-
   const handleSaveTransaction = async (values: FormValues) => {
     try {
-      const { id } = values;
+      const { id, ...data } = values;
   
       if (id) {
-        // --- UPDATE EXISTING TRANSACTION ---
-        const dataToUpdate: Partial<Omit<Transaction, 'id' | 'isRecurring' | 'seriesId'>> = {
-          type: values.type,
-          amount: values.amount,
-          description: values.description,
-          category: values.category,
-          date: values.date,
-        };
-        await updateTransaction(id, dataToUpdate);
+        // --- UPDATE ---
+        await updateTransaction(id, data);
         toast({
           title: "Transação atualizada!",
           description: "Sua transação foi atualizada com sucesso.",
         });
       } else {
-        // --- CREATE NEW TRANSACTION(S) ---
-        const { type, amount, description, category, date, isFixed, endDate } = values;
-  
-        // Definitive fix: Build a new, clean object from scratch to ensure
-        // no invalid properties (like `id: undefined`) are ever sent.
-        const baseTransactionData: Omit<Transaction, 'id' | 'seriesId'> = {
-            type,
-            amount,
-            description,
-            category,
-            date,
-            isRecurring: false, // Default to false, will be overridden if fixed
-        };
-  
-        if (isFixed) {
-          // RECURRING ADD
-          const startDate = baseTransactionData.date;
-          const finalDate = endDate || addMonths(startDate, 11);
-          
-          if (finalDate < startDate) {
-             toast({
-              title: "Erro de data",
-              description: "A data final não pode ser anterior à data da transação.",
-              variant: "destructive",
-            });
-            return;
-          }
-  
-          const installments = differenceInCalendarMonths(finalDate, startDate) + 1;
-          const seriesId = doc(collection(db, 'transactions')).id;
-          
-          const promises = [];
-          for (let i = 0; i < installments; i++) {
-            const newDate = addMonths(startDate, i);
-            const newDescription = installments > 1 && type === 'expense'
-              ? `${description} (${i + 1}/${installments})`
-              : description;
-            
-            promises.push(addTransaction({
-              ...baseTransactionData,
-              date: newDate,
-              description: newDescription,
-              isRecurring: true,
-              seriesId: seriesId,
-            }));
-          }
-          await Promise.all(promises);
-  
-          toast({
-            title: "Transações recorrentes adicionadas!",
-            description: `${installments} transação(ões) foram adicionadas com sucesso.`,
-          });
-        } else {
-          // SINGLE ADD
-          await addTransaction(baseTransactionData);
-          toast({
-            title: "Transação adicionada!",
-            description: "Sua nova transação foi adicionada com sucesso.",
-          });
-        }
+        // --- CREATE ---
+        await addTransaction(data);
+        toast({
+          title: "Transação adicionada!",
+          description: "Sua nova transação foi adicionada com sucesso.",
+        });
       }
     } catch (error) {
       console.error(error);
@@ -406,7 +304,7 @@ export default function Home() {
         onSave={handleSaveTransaction}
         categories={categories}
       />
-      <AlertDialog open={deleteSingleDialogOpen} onOpenChange={setDeleteSingleDialogOpen}>
+      <AlertDialog open={!!transactionToDeleteId} onOpenChange={(open) => !open && setTransactionToDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
@@ -415,35 +313,11 @@ export default function Home() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSingleDelete}>Continuar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setTransactionToDeleteId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>Continuar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Dialog open={deleteSeriesDialogOpen} onOpenChange={setDeleteSeriesDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Excluir Transação Recorrente</DialogTitle>
-            <DialogDescription>
-              Esta é uma transação recorrente. Escolha uma das opções abaixo para continuar.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col space-y-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={handleConfirmSingleDelete}
-            >
-              Excluir somente esta transação
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmSeriesDelete}
-            >
-              Excluir esta e as transações futuras
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

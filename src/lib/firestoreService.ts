@@ -11,8 +11,6 @@ import {
   setDoc,
   arrayUnion,
   where,
-  writeBatch,
-  getDocs,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Transaction } from './types';
@@ -71,22 +69,6 @@ export const updateTransaction = async (id: string, transactionData: Partial<Omi
 export const deleteTransaction = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, TRANSACTIONS_COLLECTION, id));
 };
-
-export const deleteFutureTransactions = async (seriesId: string, fromDate: Date): Promise<void> => {
-  const q = query(
-    collection(db, TRANSACTIONS_COLLECTION),
-    where('seriesId', '==', seriesId),
-    where('date', '>=', fromDate)
-  );
-
-  const querySnapshot = await getDocs(q);
-  const batch = writeBatch(db);
-  querySnapshot.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
-
-  await batch.commit();
-}
 
 export type Categories = {
   income: string[];
