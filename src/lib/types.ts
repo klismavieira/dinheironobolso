@@ -9,22 +9,3 @@ export type Transaction = {
   seriesId?: string;
   installment?: string;
 };
-
-export type CreditCard = {
-  id: string;
-  name: string;
-  limit: number;
-  closingDay: number;
-  dueDay: number;
-};
-
-export type CardExpense = {
-  id: string;
-  cardId: string;
-  amount: number;
-  description: string;
-  category: string;
-  date: Date;
-  seriesId?: string;
-  installment?: string;
-};
