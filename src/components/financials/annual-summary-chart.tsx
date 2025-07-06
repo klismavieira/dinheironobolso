@@ -1,6 +1,6 @@
 "use client"
 
-import { Bar, Line, ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -45,7 +45,7 @@ const formatCurrency = (value: number) => {
 export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
   return (
     <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
-      <ComposedChart
+      <BarChart
         accessibilityLayer
         data={data}
         margin={{
@@ -86,8 +86,8 @@ export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
         <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
         <Bar dataKey="Faturamento" fill="var(--color-Faturamento)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Despesa" fill="var(--color-Despesa)" radius={[4, 4, 0, 0]} />
-        <Line type="monotone" dataKey="Saldo" strokeWidth={2} stroke="var(--color-Saldo)" dot={false} />
-      </ComposedChart>
+        <Bar dataKey="Saldo" fill="var(--color-Saldo)" radius={[4, 4, 0, 0]} />
+      </BarChart>
     </ChartContainer>
   );
 }
