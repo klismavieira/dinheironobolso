@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import type { Transaction } from '@/lib/types';
+import { collection, query, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import {
   addTransaction,
   updateTransaction,
@@ -11,7 +13,6 @@ import {
   addTransactionsBatch,
   onCategoriesUpdate,
   type Categories,
-  getAllTransactions,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -48,18 +49,42 @@ export default function Home() {
 
   const forceRefetch = () => setRefetchTrigger(c => c + 1);
 
+  // Direct "brute-force" fetch from Firestore to bypass any abstraction layers
   useEffect(() => {
     const doFetch = async () => {
       setLoading(true);
       try {
-        const fetchedTransactions = await getAllTransactions();
+        const q = query(collection(db, 'transactions'));
+        const querySnapshot = await getDocs(q);
+
+        const fetchedTransactions = querySnapshot.docs
+          .map(docSnapshot => {
+            const data = docSnapshot.data();
+            // Robust check for data and date field to prevent crashes
+            if (!data || !data.date || typeof data.date.toDate !== 'function') {
+              console.warn(
+                `Skipping invalid transaction document (ID: ${docSnapshot.id}). It might be missing a valid 'date' field.`,
+                data
+              );
+              return null;
+            }
+            return {
+              id: docSnapshot.id,
+              ...data,
+              date: (data.date as Timestamp).toDate(),
+            } as Transaction;
+          })
+          .filter((t): t is Transaction => t !== null);
+
+        fetchedTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
         setTransactions(fetchedTransactions);
+
       } catch (error) {
-        console.error("Failed to fetch transactions:", error);
+        console.error("Failed to fetch transactions directly:", error);
         const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
         toast({
-          title: "Erro ao carregar transações",
-          description,
+          title: "Erro Crítico ao Carregar Transações",
+          description: `Erro direto do banco: ${description}`,
           variant: "destructive",
         });
       } finally {
