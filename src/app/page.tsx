@@ -13,6 +13,7 @@ import {
   type Categories,
   getTransactionsForPeriod,
   getTotalTransactionCount,
+  onTransactionsUpdate,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -20,7 +21,7 @@ import { TransactionList } from '@/components/financials/transaction-list';
 import { TransactionDialog, type FormValues } from '@/components/financials/transaction-dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -42,7 +43,6 @@ import { cn } from '@/lib/utils';
 
 
 export default function Home() {
-  const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -79,31 +79,34 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Fetch transactions when dateRange is defined
     if (!dateRange?.from || !dateRange?.to) {
+      setTransactions([]); // Clear transactions if date range is cleared
       return;
     }
 
-    const fetchTransactions = async () => {
-      setLoading(true);
-      try {
-        const data = await getTransactionsForPeriod(dateRange.from!, dateRange.to!);
-        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
-        setTransactions(sortedData);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-        const description = error instanceof Error ? error.message : "Não foi possível buscar as transações.";
+    setLoading(true);
+    // onTransactionsUpdate returns an unsubscribe function that we'll call on cleanup
+    const unsubscribe = onTransactionsUpdate(
+      dateRange.from,
+      dateRange.to,
+      (updatedTransactions) => {
+        // The listener provides the real-time, sorted data
+        setTransactions(updatedTransactions);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Failed to subscribe to transactions:", error);
         toast({
-          title: "Erro ao buscar dados",
-          description,
+          title: "Erro ao carregar transações",
+          description: error.message,
           variant: "destructive",
         });
-      } finally {
         setLoading(false);
       }
-    };
+    );
 
-    fetchTransactions();
+    // Return the unsubscribe function to be called when the component unmounts or the dateRange changes
+    return () => unsubscribe();
   }, [dateRange]);
 
   useEffect(() => {
@@ -194,12 +197,7 @@ export default function Home() {
         title: "Status alterado!",
         description: "O status de pagamento da transação foi atualizado.",
       });
-      // Re-fetch data after update to reflect changes immediately
-      if (dateRange?.from && dateRange.to) {
-        const data = await getTransactionsForPeriod(dateRange.from, dateRange.to);
-        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
-        setTransactions(sortedData);
-      }
+      // No manual re-fetch needed, onSnapshot handles the update.
     } catch (error) {
       console.error("Error updating paid status:", error);
       const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
@@ -232,12 +230,7 @@ export default function Home() {
           variant: 'destructive'
         });
       }
-       // Re-fetch data after delete
-       if (dateRange?.from && dateRange.to) {
-        const data = await getTransactionsForPeriod(dateRange.from, dateRange.to);
-        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
-        setTransactions(sortedData);
-      }
+       // No manual re-fetch needed, onSnapshot handles the update.
     } catch (error) {
        const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
        toast({
@@ -321,12 +314,7 @@ export default function Home() {
           });
         }
       }
-       // Re-fetch data after save
-      if (dateRange?.from && dateRange.to) {
-        const data = await getTransactionsForPeriod(dateRange.from, dateRange.to);
-        const sortedData = data.sort((a, b) => b.date.getTime() - a.date.getTime());
-        setTransactions(sortedData);
-      }
+       // No manual re-fetch needed, onSnapshot handles the update.
     } catch (error) {
       console.error(error);
       const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";
