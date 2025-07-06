@@ -177,7 +177,7 @@ export default function Home() {
   const handleSaveTransaction = async (values: FormValues) => {
     try {
       const { id } = values;
-
+  
       if (id) {
         // --- UPDATE EXISTING TRANSACTION ---
         const dataToUpdate: Partial<Omit<Transaction, 'id' | 'isRecurring' | 'seriesId'>> = {
@@ -195,7 +195,7 @@ export default function Home() {
       } else {
         // --- CREATE NEW TRANSACTION(S) ---
         const { type, amount, description, category, date, isFixed, endDate } = values;
-
+  
         // Definitive fix: Build a new, clean object from scratch to ensure
         // no invalid properties (like `id: undefined`) are ever sent.
         const baseTransactionData: Omit<Transaction, 'id' | 'seriesId'> = {
@@ -206,7 +206,7 @@ export default function Home() {
             date,
             isRecurring: false, // Default to false, will be overridden if fixed
         };
-
+  
         if (isFixed) {
           // RECURRING ADD
           const startDate = baseTransactionData.date;
@@ -220,7 +220,7 @@ export default function Home() {
             });
             return;
           }
-
+  
           const installments = differenceInCalendarMonths(finalDate, startDate) + 1;
           const seriesId = doc(collection(db, 'transactions')).id;
           
@@ -240,7 +240,7 @@ export default function Home() {
             }));
           }
           await Promise.all(promises);
-
+  
           toast({
             title: "Transações recorrentes adicionadas!",
             description: `${installments} transação(ões) foram adicionadas com sucesso.`,
