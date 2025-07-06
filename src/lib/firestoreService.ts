@@ -73,11 +73,10 @@ export const deleteTransaction = async (id: string): Promise<void> => {
 };
 
 export const deleteFutureTransactions = async (seriesId: string, fromDate: Date): Promise<void> => {
-  const fromTimestamp = Timestamp.fromDate(fromDate);
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
     where('seriesId', '==', seriesId),
-    where('date', '>=', fromTimestamp)
+    where('date', '>=', fromDate)
   );
 
   const querySnapshot = await getDocs(q);
