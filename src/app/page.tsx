@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Transaction } from '@/lib/types';
-import { collection, query, getDocs, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import type { DateRange } from 'react-day-picker';
 import {
   addTransaction,
   updateTransaction,
@@ -13,13 +12,14 @@ import {
   addTransactionsBatch,
   onCategoriesUpdate,
   type Categories,
+  getTransactionsForPeriod,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';
 import { TransactionDialog, type FormValues } from '@/components/financials/transaction-dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -32,8 +32,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { addMonths } from 'date-fns';
+import { addMonths, startOfMonth, endOfMonth, format, getMonth, setMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { v4 as uuidv4 } from 'uuid';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -45,46 +49,36 @@ export default function Home() {
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [transactionToTogglePaid, setTransactionToTogglePaid] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const { toast } = useToast();
 
   const forceRefetch = () => setRefetchTrigger(c => c + 1);
 
-  // Direct "brute-force" fetch from Firestore to bypass any abstraction layers
+  // Initialize date range on client to avoid hydration mismatch
   useEffect(() => {
+    setDateRange({
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    });
+  }, []);
+
+  // Fetch transactions for the selected period
+  useEffect(() => {
+    if (!dateRange?.from || !dateRange?.to) {
+      return;
+    }
+
     const doFetch = async () => {
       setLoading(true);
       try {
-        const q = query(collection(db, 'transactions'));
-        const querySnapshot = await getDocs(q);
-
-        const fetchedTransactions = querySnapshot.docs
-          .map(docSnapshot => {
-            const data = docSnapshot.data();
-            // Robust check for data and date field to prevent crashes
-            if (!data || !data.date || typeof data.date.toDate !== 'function') {
-              console.warn(
-                `Skipping invalid transaction document (ID: ${docSnapshot.id}). It might be missing a valid 'date' field.`,
-                data
-              );
-              return null;
-            }
-            return {
-              id: docSnapshot.id,
-              ...data,
-              date: (data.date as Timestamp).toDate(),
-            } as Transaction;
-          })
-          .filter((t): t is Transaction => t !== null);
-
-        fetchedTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+        const fetchedTransactions = await getTransactionsForPeriod(dateRange.from!, dateRange.to!);
         setTransactions(fetchedTransactions);
-
       } catch (error) {
-        console.error("Failed to fetch transactions directly:", error);
+        console.error("Failed to fetch transactions:", error);
         const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
         toast({
-          title: "Erro Crítico ao Carregar Transações",
-          description: `Erro direto do banco: ${description}`,
+          title: "Erro ao Carregar Transações",
+          description,
           variant: "destructive",
         });
       } finally {
@@ -92,7 +86,7 @@ export default function Home() {
       }
     };
     doFetch();
-  }, [refetchTrigger]);
+  }, [refetchTrigger, dateRange, toast]);
 
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
@@ -110,11 +104,12 @@ export default function Home() {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
 
   const handleAddTransaction = (type: 'income' | 'expense') => {
-    setCurrentTransaction({ type, date: new Date() });
+    const defaultDate = dateRange?.from || new Date();
+    setCurrentTransaction({ type, date: defaultDate });
     setDialogOpen(true);
   };
 
@@ -267,16 +262,91 @@ export default function Home() {
     }
   };
   
+  const handleMonthClick = (monthIndex: number) => {
+    const referenceDate = dateRange?.from || new Date();
+    const targetMonthDate = setMonth(referenceDate, monthIndex);
+    setDateRange({
+      from: startOfMonth(targetMonthDate),
+      to: endOfMonth(targetMonthDate),
+    });
+  };
+
+  const getActiveMonth = () => {
+    if (!dateRange?.from || !dateRange?.to) {
+      return -1;
+    }
+    const fromStartOfMonth = startOfMonth(dateRange.from);
+    const fromEndOfMonth = endOfMonth(dateRange.from);
+
+    if (
+      dateRange.from.getTime() === fromStartOfMonth.getTime() &&
+      dateRange.to?.getTime() === fromEndOfMonth.getTime()
+    ) {
+      return getMonth(dateRange.from);
+    }
+    return -1;
+  };
+
+  const activeMonth = getActiveMonth();
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const referenceDate = new Date();
+    const monthName = format(setMonth(referenceDate, i), 'MMM', { locale: ptBR });
+    return monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.', '');
+  });
+
   const incomeTransactions = transactions.filter((t) => t.type === 'income');
   const expenseTransactions = transactions.filter((t) => t.type === 'expense');
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center p-4 bg-muted border-dashed border rounded-lg mb-4">
-        <h2 className="text-lg font-semibold text-center">Modo de Depuração Ativado</h2>
-        <p className="text-muted-foreground text-center text-sm">
-          Todos os filtros foram removidos. Exibindo todas as transações do banco de dados.
-        </p>
+      <div className="flex flex-col items-center justify-center gap-4 mb-4">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              id="date"
+              variant={'outline'}
+              className={cn('w-full sm:w-[300px] justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateRange?.from ? (
+                dateRange.to ? (
+                  <>
+                    {format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} -{' '}
+                    {format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}
+                  </>
+                ) : (
+                  format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })
+                )
+              ) : (
+                <span>Selecione um período</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={setDateRange}
+              numberOfMonths={2}
+              locale={ptBR}
+            />
+          </PopoverContent>
+        </Popover>
+
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {months.map((month, index) => (
+            <Button
+              key={month}
+              variant={activeMonth === index ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleMonthClick(index)}
+            >
+              {month}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
