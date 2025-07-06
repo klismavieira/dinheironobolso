@@ -110,7 +110,7 @@ export default function Home() {
 
 
   const handleAddTransaction = (type: 'income' | 'expense') => {
-    setCurrentTransaction({ type });
+    setCurrentTransaction({ type, date: dateRange?.from || new Date() });
     setDialogOpen(true);
   };
 

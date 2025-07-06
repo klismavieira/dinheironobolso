@@ -126,7 +126,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           amount: 0,
           description: '',
           category: undefined,
-          date: new Date(),
+          date: transaction?.date || new Date(),
           isPaid: false,
           isFixed: false,
           installments: undefined,
