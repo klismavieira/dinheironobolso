@@ -17,6 +17,7 @@ import {
 import { db } from './firebase';
 import type { Transaction } from './types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from './constants';
+import { startOfDay } from 'date-fns';
 
 const TRANSACTIONS_COLLECTION = 'transactions';
 const CATEGORIES_COLLECTION = 'categories';
@@ -59,7 +60,7 @@ export const onTransactionsUpdate = (
   return unsubscribe;
 };
 
-export const addTransaction = async (transactionData: Omit<Transaction, 'id'>): Promise<void> => {
+export const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'seriesId' | 'installment'>): Promise<void> => {
   await addDoc(collection(db, TRANSACTIONS_COLLECTION), transactionData);
 };
 
@@ -82,8 +83,9 @@ export const deleteTransaction = async (id: string): Promise<void> => {
 };
 
 export const deleteFutureTransactions = async (seriesId: string, fromDate: Date): Promise<void> => {
-  // Convert the JS Date to a Firestore Timestamp to ensure query accuracy.
-  const fromTimestamp = Timestamp.fromDate(fromDate);
+  // Normalize the date to the beginning of the day to avoid timezone/precision issues.
+  const startOfFromDay = startOfDay(fromDate);
+  const fromTimestamp = Timestamp.fromDate(startOfFromDay);
 
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
