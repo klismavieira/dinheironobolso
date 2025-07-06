@@ -124,7 +124,6 @@ export default function Home() {
 
   const handleDeleteTransaction = (transaction: Transaction) => {
     setTransactionToDelete(transaction);
-    // Only treat as a series if it's marked as recurring AND has a seriesId
     if (transaction.isRecurring && transaction.seriesId) {
       setDeleteSeriesDialogOpen(true);
     } else {
@@ -180,8 +179,7 @@ export default function Home() {
       const { id, isFixed, endDate } = values;
 
       if (id) {
-        // UPDATE LOGIC
-        // When updating, we don't handle recurrence changes. We just update the single transaction.
+        // --- UPDATE EXISTING TRANSACTION ---
         const dataToUpdate: Partial<Omit<Transaction, 'id' | 'isRecurring' | 'seriesId'>> = {
           type: values.type,
           amount: values.amount,
@@ -195,20 +193,21 @@ export default function Home() {
           description: "Sua transação foi atualizada com sucesso.",
         });
       } else {
-        // ADD LOGIC
-        // Create a clean base object with only the data we need for Firestore.
-        const baseTransactionData = {
-          type: values.type,
-          amount: values.amount,
-          description: values.description,
-          category: values.category,
-          date: values.date,
-        };
+        // --- CREATE NEW TRANSACTION(S) ---
+        // Create a clean copy of the values from the form.
+        const dataToSend = { ...values };
+        
+        // This is the definitive fix: explicitly remove properties that are not part
+        // of the transaction data model or are invalid for new documents.
+        // `id` is 'undefined' for new transactions and illegal in Firestore `addDoc`.
+        // `isFixed` and `endDate` are form-only fields.
+        delete (dataToSend as Partial<FormValues>).id;
+        delete dataToSend.isFixed;
+        delete dataToSend.endDate;
 
         if (isFixed) {
           // RECURRING ADD
-          const startDate = baseTransactionData.date;
-          // Default to 11 months in the future, for a total of 12 occurrences
+          const startDate = dataToSend.date;
           const finalDate = endDate || addMonths(startDate, 11);
           
           if (finalDate < startDate) {
@@ -226,18 +225,17 @@ export default function Home() {
           const promises = [];
           for (let i = 0; i < installments; i++) {
             const newDate = addMonths(startDate, i);
-            const newDescription = installments > 1 && baseTransactionData.type === 'expense'
-              ? `${baseTransactionData.description} (${i + 1}/${installments})`
-              : baseTransactionData.description;
+            const newDescription = installments > 1 && dataToSend.type === 'expense'
+              ? `${dataToSend.description} (${i + 1}/${installments})`
+              : dataToSend.description;
             
-            const transactionDataForLoop: Omit<Transaction, 'id'> = {
-              ...baseTransactionData,
+            promises.push(addTransaction({
+              ...dataToSend,
               date: newDate,
               description: newDescription,
               isRecurring: true,
               seriesId: seriesId,
-            };
-            promises.push(addTransaction(transactionDataForLoop));
+            }));
           }
           await Promise.all(promises);
 
@@ -247,7 +245,7 @@ export default function Home() {
           });
         } else {
           // SINGLE ADD
-          await addTransaction({ ...baseTransactionData, isRecurring: false });
+          await addTransaction({ ...dataToSend, isRecurring: false });
           toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
