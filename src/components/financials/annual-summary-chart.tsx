@@ -1,6 +1,6 @@
 "use client"
 
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -29,10 +29,6 @@ const chartConfig = {
     label: "Despesa",
     color: "hsl(var(--destructive))",
   },
-  Saldo: {
-    label: "Saldo",
-    color: "hsl(var(--accent))",
-  },
 } satisfies ChartConfig
 
 const formatCurrency = (value: number) => {
@@ -45,7 +41,7 @@ const formatCurrency = (value: number) => {
 export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
   return (
     <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
-      <LineChart
+      <BarChart
         accessibilityLayer
         data={data}
         margin={{
@@ -79,16 +75,14 @@ export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
         <Tooltip
           cursor={false}
           content={<ChartTooltipContent
-            indicator="dot"
             formatter={(value) => formatCurrency(value as number)}
           />}
         />
         <Legend content={<ChartLegendContent />} />
         <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
-        <Line dataKey="Faturamento" type="monotone" stroke="var(--color-Faturamento)" strokeWidth={2} dot={false} />
-        <Line dataKey="Despesa" type="monotone" stroke="var(--color-Despesa)" strokeWidth={2} dot={false} />
-        <Line dataKey="Saldo" type="monotone" stroke="var(--color-Saldo)" strokeWidth={2} dot={false} />
-      </LineChart>
+        <Bar dataKey="Faturamento" fill="var(--color-Faturamento)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Despesa" fill="var(--color-Despesa)" radius={[4, 4, 0, 0]} />
+      </BarChart>
     </ChartContainer>
   );
 }
