@@ -73,14 +73,12 @@ export default function CreditCardsPage() {
 
   const handleSaveCard = async (values: CreditCardFormValues) => {
     try {
-      const { id, ...cardData } = values; // Separate id from the rest of the form data.
+      const { id, ...cardData } = values;
 
       if (id) {
-        // If an ID exists, it's an update.
         await updateCreditCard(id, cardData);
         toast({ title: "Cartão atualizado com sucesso!" });
       } else {
-        // Otherwise, it's a new card.
         await addCreditCard(cardData);
         toast({ title: "Cartão adicionado com sucesso!" });
       }
@@ -146,8 +144,7 @@ export default function CreditCardsPage() {
 
       } else {
         // --- CREATE SINGLE ---
-        // Determine billing cycle
-        const purchaseDate = values.date;
+        const purchaseDate = baseValues.date;
         const billingCycleDate = new Date(purchaseDate);
         if (purchaseDate.getDate() > targetCard.closingDay) {
             billingCycleDate.setMonth(purchaseDate.getMonth() + 1);
@@ -155,11 +152,8 @@ export default function CreditCardsPage() {
         const billingCycle = format(billingCycleDate, 'yyyy-MM');
 
         const expenseData: Omit<CardExpense, 'id'> = {
+          ...baseValues,
           cardId: cardForNewExpense,
-          description: values.description,
-          amount: values.amount,
-          category: values.category,
-          date: values.date,
           isBilled: false,
           billingCycle: billingCycle,
         };
