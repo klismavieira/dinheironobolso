@@ -5,6 +5,7 @@ export type Transaction = {
   category: string;
   description: string;
   date: Date;
+  isPaid: boolean;
   seriesId?: string;
   installment?: string;
 };

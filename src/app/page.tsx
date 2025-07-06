@@ -122,6 +122,19 @@ export default function Home() {
     setTransactionToDelete(transaction);
   };
 
+  const handleTogglePaidStatus = async (transaction: Transaction) => {
+    try {
+      await updateTransaction(transaction.id, { isPaid: !transaction.isPaid });
+    } catch (error) {
+      console.error("Error updating paid status:", error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível alterar o status da transação.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleConfirmDelete = async (scope: 'single' | 'future' = 'single') => {
     if (!transactionToDelete) return;
     
@@ -338,12 +351,14 @@ export default function Home() {
                 transactions={incomeTransactions}
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
+                onTogglePaid={handleTogglePaidStatus}
               />
               <TransactionList
                 title="Despesas"
                 transactions={expenseTransactions}
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
+                onTogglePaid={handleTogglePaidStatus}
               />
             </div>
         )}

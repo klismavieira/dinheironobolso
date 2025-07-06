@@ -57,11 +57,11 @@ const formSchema = z.object({
   category: z.string({ required_error: 'Selecione uma categoria.' }),
   date: z.preprocess((arg) => {
     if (typeof arg === 'string') {
-      // Handles 'YYYY-MM-DD' from date input, parsing in local timezone.
       return new Date(`${arg}T00:00:00`);
     }
     return arg;
   }, z.date({ required_error: 'A data é obrigatória.' })),
+  isPaid: z.boolean().default(false),
   isFixed: z.boolean().default(false),
   installments: z.coerce.number().min(2, 'O número de parcelas deve ser 2 ou mais.').optional(),
   seriesId: z.string().optional(),
@@ -80,7 +80,6 @@ interface TransactionDialogProps {
 }
 
 const toYYYYMMDD = (date: Date) => {
-  // Using local date components is safer against timezone issues.
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -115,6 +114,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           description: transaction.description,
           category: transaction.category,
           date: transaction.date || new Date(),
+          isPaid: transaction.isPaid,
           isFixed: !!transaction.seriesId,
           seriesId: transaction.seriesId,
           editScope: transaction.editScope,
@@ -127,6 +127,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           description: '',
           category: undefined,
           date: new Date(),
+          isPaid: false,
           isFixed: false,
           installments: undefined,
           seriesId: undefined,
@@ -227,9 +228,6 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
                             {...field}
                             value={field.value instanceof Date ? toYYYYMMDD(field.value) : ''}
                             onChange={e => {
-                              // Manually construct date from string to avoid timezone issues.
-                              // e.target.value is "YYYY-MM-DD", which we want to interpret as local time, not UTC.
-                              // `new Date(`${e.target.value}T00:00:00`)` interprets it as local time.
                               if (e.target.value) {
                                 field.onChange(new Date(`${e.target.value}T00:00:00`));
                               }

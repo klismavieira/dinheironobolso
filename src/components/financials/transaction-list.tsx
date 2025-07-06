@@ -7,15 +7,18 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 interface TransactionListProps {
   title: string;
   transactions: Transaction[];
   onEdit: (transaction: Transaction) => void;
   onDelete: (transaction: Transaction) => void;
+  onTogglePaid: (transaction: Transaction) => void;
 }
 
-export function TransactionList({ title, transactions, onEdit, onDelete }: TransactionListProps) {
+export function TransactionList({ title, transactions, onEdit, onDelete, onTogglePaid }: TransactionListProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -40,16 +43,31 @@ export function TransactionList({ title, transactions, onEdit, onDelete }: Trans
                 {transactions.map((transaction, index) => (
                   <div key={transaction.id}>
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-1">
-                        <p className="font-medium">{transaction.description}</p>
-                        <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline">{transaction.category}</Badge>
-                          {transaction.installment && <Badge variant="secondary">{transaction.installment}</Badge>}
-                          <span>{formatDate(transaction.date)}</span>
+                      <div className="flex items-start gap-3 flex-1">
+                        <Checkbox
+                          id={`paid-${transaction.id}`}
+                          checked={transaction.isPaid}
+                          onCheckedChange={() => onTogglePaid(transaction)}
+                          aria-label="Marcar como pago"
+                          className="mt-1"
+                        />
+                        <div className={cn("flex-1 space-y-1", transaction.isPaid && "text-muted-foreground")}>
+                          <p className={cn("font-medium", transaction.isPaid && "line-through")}>
+                            {transaction.description}
+                          </p>
+                          <div className="text-sm flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline">{transaction.category}</Badge>
+                            {transaction.installment && <Badge variant="secondary">{transaction.installment}</Badge>}
+                            <span className={cn(transaction.isPaid && "line-through")}>{formatDate(transaction.date)}</span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className={`font-bold text-sm ${transaction.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
+                        <span className={cn(
+                          'font-bold text-sm',
+                           transaction.type === 'income' ? 'text-accent' : 'text-destructive',
+                           transaction.isPaid && "line-through text-muted-foreground"
+                        )}>
                           {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                         </span>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(transaction)}>
