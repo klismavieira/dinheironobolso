@@ -16,7 +16,7 @@ import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';
 import { TransactionDialog, type FormValues } from '@/components/financials/transaction-dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -29,7 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { addMonths, differenceInCalendarMonths } from 'date-fns';
+import { addMonths, subMonths, differenceInCalendarMonths, format, startOfMonth, endOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Home() {
   const { toast } = useToast();
@@ -40,9 +41,16 @@ export default function Home() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
+    setLoading(true);
+    const firstDay = startOfMonth(currentDate);
+    const lastDay = endOfMonth(currentDate);
+
     const unsubscribe = onTransactionsUpdate(
+      firstDay,
+      lastDay,
       (updatedTransactions) => {
         setTransactions(updatedTransactions);
         setLoading(false);
@@ -60,7 +68,7 @@ export default function Home() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [toast]);
+  }, [currentDate, toast]);
   
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
@@ -183,6 +191,14 @@ export default function Home() {
       });
     }
   };
+  
+  const handlePrevMonth = () => {
+    setCurrentDate(subMonths(currentDate, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(addMonths(currentDate, 1));
+  };
 
   const incomeTransactions = transactions.filter((t) => t.type === 'income');
   const expenseTransactions = transactions.filter((t) => t.type === 'expense');
@@ -191,6 +207,18 @@ export default function Home() {
     <div className="flex min-h-screen w-full flex-col bg-background">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
+        <div className="flex items-center justify-center gap-4">
+          <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-xl font-semibold w-48 text-center capitalize">
+            {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+          </span>
+          <Button variant="outline" size="icon" onClick={handleNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
         {loading ? (
           <div className="grid gap-4 md:grid-cols-3 md:gap-8">
             <Skeleton className="h-[125px] w-full" />

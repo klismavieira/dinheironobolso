@@ -10,6 +10,7 @@ import {
   onSnapshot,
   setDoc,
   arrayUnion,
+  where,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Transaction } from './types';
@@ -29,11 +30,18 @@ const fromFirestore = (docSnapshot: any): Transaction => {
 };
 
 export const onTransactionsUpdate = (
+  startDate: Date,
+  endDate: Date,
   onUpdate: (transactions: Transaction[]) => void,
   onError: (error: Error) => void
 ) => {
-  const q = query(collection(db, TRANSACTIONS_COLLECTION), orderBy('date', 'desc'));
-  
+  const q = query(
+    collection(db, TRANSACTIONS_COLLECTION),
+    where('date', '>=', startDate),
+    where('date', '<=', endDate),
+    orderBy('date', 'desc')
+  );
+
   const unsubscribe = onSnapshot(
     q,
     (querySnapshot) => {
@@ -41,7 +49,7 @@ export const onTransactionsUpdate = (
       onUpdate(transactions);
     },
     (error) => {
-      console.error("Error listening to transaction updates:", error);
+      console.error('Error listening to transaction updates:', error);
       onError(error);
     }
   );
