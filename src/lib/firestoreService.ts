@@ -13,7 +13,6 @@ import {
   where,
   writeBatch,
   getDocs,
-  getDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Transaction } from './types';
@@ -77,6 +76,20 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
       throw new Error(`Não foi possível buscar as transações do período: ${error.message}`);
     }
     throw new Error("Não foi possível buscar as transações. Verifique sua conexão ou permissões.");
+  }
+};
+
+export const getTotalTransactionCount = async (): Promise<number> => {
+  const q = query(collection(db, TRANSACTIONS_COLLECTION));
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.size;
+  } catch (error) {
+    console.error("Firebase Error: Failed to get total transaction count.", error);
+    if (error instanceof Error) {
+      throw new Error(`Não foi possível contar as transações: ${error.message}`);
+    }
+    throw new Error("Não foi possível contar as transações. Verifique sua conexão ou permissões.");
   }
 };
 

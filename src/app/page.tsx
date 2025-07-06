@@ -13,6 +13,7 @@ import {
   onCategoriesUpdate,
   type Categories,
   getTransactionsForPeriod,
+  getTotalTransactionCount,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -32,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths, subMonths, startOfDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths, subMonths } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
@@ -53,6 +54,7 @@ export default function Home() {
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [previousBalance, setPreviousBalance] = useState(0);
+  const [totalTransactionsCount, setTotalTransactionsCount] = useState<number | null>(null);
 
   useEffect(() => {
     // This effect runs only on the client, after hydration, to avoid mismatch
@@ -60,7 +62,22 @@ export default function Home() {
       from: startOfMonth(new Date()),
       to: endOfMonth(new Date()),
     });
-  }, []);
+
+    const fetchTotalCount = async () => {
+      try {
+        const count = await getTotalTransactionCount();
+        setTotalTransactionsCount(count);
+      } catch (error) {
+          const description = error instanceof Error ? error.message : "Não foi possível buscar a contagem total.";
+          toast({
+            title: "Erro ao buscar dados",
+            description,
+            variant: "destructive",
+          });
+      }
+    };
+    fetchTotalCount();
+  }, [toast]);
 
   useEffect(() => {
     // Only fetch transactions when dateRange is defined
@@ -403,7 +420,11 @@ export default function Home() {
           <Skeleton className="h-[125px] w-full" />
         </div>
       ) : (
-        <FinancialSummary transactions={transactions} previousBalance={previousBalance} />
+        <FinancialSummary 
+          transactions={transactions} 
+          previousBalance={previousBalance}
+          totalTransactionsCount={totalTransactionsCount}
+        />
       )}
 
       <div className="flex items-center justify-end gap-2">
