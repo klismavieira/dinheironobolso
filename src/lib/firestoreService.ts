@@ -25,6 +25,11 @@ const CATEGORIES_COLLECTION = 'categories';
 // Helper to convert Firestore data to Transaction type
 const fromFirestore = (docSnapshot: any): Transaction => {
   const data = docSnapshot.data();
+  // Add robust check for data and date field
+  if (!data || !data.date || typeof data.date.toDate !== 'function') {
+    console.error('Invalid transaction data found, missing or invalid date:', docSnapshot.id, data);
+    throw new Error(`O documento de transação com ID ${docSnapshot.id} é inválido ou não possui uma data.`);
+  }
   return {
     id: docSnapshot.id,
     ...data,
@@ -48,8 +53,17 @@ export const onTransactionsUpdate = (
   const unsubscribe = onSnapshot(
     q,
     (querySnapshot) => {
-      const transactions = querySnapshot.docs.map(fromFirestore);
-      onUpdate(transactions);
+      try {
+        const transactions = querySnapshot.docs.map(fromFirestore);
+        onUpdate(transactions);
+      } catch (e) {
+        console.error("Error processing transaction data:", e);
+        if (e instanceof Error) {
+            onError(new Error(`Erro ao processar dados da transação: ${e.message}`));
+        } else {
+            onError(new Error("Ocorreu um erro desconhecido ao processar as transações."));
+        }
+      }
     },
     (error) => {
       console.error('Error listening to transaction updates:', error);
