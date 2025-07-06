@@ -47,8 +47,8 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
                   const isLate = !transaction.isPaid && transaction.date < today;
                   return (
                     <div key={transaction.id}>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3 flex-1">
+                      <div className="grid grid-cols-[1fr_auto] items-start gap-4">
+                        <div className="flex items-start gap-3">
                           <Checkbox
                             id={`paid-${transaction.id}`}
                             checked={transaction.isPaid}
@@ -56,7 +56,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
                             aria-label="Marcar como pago"
                             className="mt-1"
                           />
-                          <div className="flex-1 space-y-1">
+                          <div className="space-y-1">
                             <p className="font-medium">
                               {transaction.description}
                             </p>
@@ -71,7 +71,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
                         </div>
                         <div className="flex items-center gap-1">
                           <span className={cn(
-                            'font-bold text-sm',
+                            'font-bold text-sm whitespace-nowrap',
                              transaction.type === 'income' ? 'text-accent' : 'text-destructive'
                           )}>
                             {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
