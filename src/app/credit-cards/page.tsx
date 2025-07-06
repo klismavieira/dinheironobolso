@@ -8,6 +8,7 @@ import {
   deleteCreditCard,
   onCategoriesUpdate,
   addCardExpense,
+  addCardExpensesBatch,
   type Categories,
 } from '@/lib/firestoreService';
 import type { CreditCard, CardExpense } from '@/lib/types';
@@ -20,7 +21,8 @@ import { CardExpenseDialog, type FormValues as CardExpenseFormValues } from '@/c
 import { CreditCardView } from '@/components/credit-cards/credit-card-view';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EXPENSE_CATEGORIES } from '@/lib/constants';
-import { format } from 'date-fns';
+import { format, addMonths } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function CreditCardsPage() {
   const { toast } = useToast();
@@ -111,26 +113,62 @@ export default function CreditCardsPage() {
       const targetCard = cards.find(c => c.id === cardForNewExpense);
       if (!targetCard) throw new Error("Cartão não encontrado");
 
-      // Determine billing cycle
-      const purchaseDate = values.date;
-      const billingCycleDate = new Date(purchaseDate);
-      if (purchaseDate.getDate() > targetCard.closingDay) {
-          billingCycleDate.setMonth(purchaseDate.getMonth() + 1);
-      }
-      const billingCycle = format(billingCycleDate, 'yyyy-MM');
+      const { id, isRecurring, installments, ...baseValues } = values;
+      
+      if (isRecurring) {
+        // --- CREATE RECURRING ---
+        const numInstallments = installments || 12;
+        const seriesId = uuidv4();
+        const batchData: Omit<CardExpense, 'id'>[] = [];
 
-      const expenseData: Omit<CardExpense, 'id'> = {
-        cardId: cardForNewExpense,
-        description: values.description,
-        amount: values.amount,
-        category: values.category,
-        date: values.date,
-        isBilled: false,
-        billingCycle: billingCycle,
-      };
-      await addCardExpense(cardForNewExpense, expenseData);
-      toast({ title: "Despesa adicionada ao cartão!" });
+        for (let i = 0; i < numInstallments; i++) {
+          const newDate = addMonths(baseValues.date, i);
+          
+          // Determine billing cycle for the new date
+          const billingCycleDate = new Date(newDate);
+          if (newDate.getDate() > targetCard.closingDay) {
+              billingCycleDate.setMonth(newDate.getMonth() + 1);
+          }
+          const billingCycle = format(billingCycleDate, 'yyyy-MM');
+
+          batchData.push({
+            ...baseValues,
+            cardId: cardForNewExpense,
+            date: newDate,
+            isBilled: false,
+            billingCycle: billingCycle,
+            seriesId: seriesId,
+            installment: `${i + 1}/${numInstallments}`,
+          });
+        }
+        await addCardExpensesBatch(cardForNewExpense, batchData);
+        toast({ title: `Assinatura adicionada por ${numInstallments} meses!` });
+
+      } else {
+        // --- CREATE SINGLE ---
+        // Determine billing cycle
+        const purchaseDate = values.date;
+        const billingCycleDate = new Date(purchaseDate);
+        if (purchaseDate.getDate() > targetCard.closingDay) {
+            billingCycleDate.setMonth(purchaseDate.getMonth() + 1);
+        }
+        const billingCycle = format(billingCycleDate, 'yyyy-MM');
+
+        const expenseData: Omit<CardExpense, 'id'> = {
+          cardId: cardForNewExpense,
+          description: values.description,
+          amount: values.amount,
+          category: values.category,
+          date: values.date,
+          isBilled: false,
+          billingCycle: billingCycle,
+        };
+        await addCardExpense(cardForNewExpense, expenseData);
+        toast({ title: "Despesa adicionada ao cartão!" });
+      }
+
     } catch (error) {
+      console.error("Error saving card expense:", error);
       toast({ title: "Erro ao salvar despesa do cartão", variant: "destructive" });
     } finally {
       setCardForNewExpense(null);

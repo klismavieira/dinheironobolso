@@ -8,9 +8,11 @@ import { useEffect } from 'react';
 import { type Categories } from '@/lib/firestoreService';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const toYYYYMMDD = (date: Date) => {
     const year = date.getFullYear();
@@ -27,6 +29,8 @@ const formSchema = z.object({
   date: z.preprocess((arg) => {
     if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
   }, z.date({ required_error: 'A data é obrigatória.' })),
+  isRecurring: z.boolean().default(false),
+  installments: z.coerce.number().min(2, 'O número de parcelas deve ser 2 ou mais.').optional(),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -42,9 +46,13 @@ interface CardExpenseDialogProps {
 export function CardExpenseDialog({ open, onOpenChange, expense, onSave, categories }: CardExpenseDialogProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      isRecurring: false,
+    },
   });
 
   const isEditing = !!expense?.id;
+  const isRecurring = form.watch('isRecurring');
   const availableCategories = categories.expense.filter(c => c !== 'Fatura do Cartão');
 
   useEffect(() => {
@@ -55,6 +63,7 @@ export function CardExpenseDialog({ open, onOpenChange, expense, onSave, categor
         amount: expense.amount || 0,
         category: expense.category,
         date: expense.date || new Date(),
+        isRecurring: !!expense.seriesId,
       });
     }
   }, [open, expense, form]);
@@ -116,6 +125,54 @@ export function CardExpenseDialog({ open, onOpenChange, expense, onSave, categor
                 <FormMessage />
               </FormItem>
             )} />
+
+            <Separator />
+            
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isEditing}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Esta é uma despesa recorrente (assinatura)?
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+              {isRecurring && !isEditing && (
+                <FormField
+                  control={form.control}
+                  name="installments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Meses</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Padrão: 12"
+                          min="2"
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Deixe em branco para o padrão de 12 meses.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>{isEditing ? 'Salvar' : 'Adicionar'}</Button>

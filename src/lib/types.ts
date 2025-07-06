@@ -27,4 +27,6 @@ export type CardExpense = {
   date: Date;
   isBilled: boolean;
   billingCycle: string; // e.g., '2024-07'
+  seriesId?: string;
+  installment?: string;
 };

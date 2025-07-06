@@ -281,9 +281,43 @@ export const addCardExpense = async (cardId: string, expenseData: Omit<CardExpen
   await addDoc(expensesCollectionRef, expenseData);
 };
 
+export const addCardExpensesBatch = async (cardId:string, expensesData: Omit<CardExpense, 'id'>[]): Promise<void> => {
+  const batch = writeBatch(db);
+  const expensesCollectionRef = collection(db, CREDIT_CARDS_COLLECTION, cardId, CARD_EXPENSES_SUBCOLLECTION);
+  expensesData.forEach(expense => {
+    const docRef = doc(expensesCollectionRef);
+    batch.set(docRef, expense);
+  });
+  await batch.commit();
+}
+
 export const deleteCardExpense = async (cardId: string, expenseId: string): Promise<void> => {
   const expenseDocRef = doc(db, CREDIT_CARDS_COLLECTION, cardId, CARD_EXPENSES_SUBCOLLECTION, expenseId);
   await deleteDoc(expenseDocRef);
+};
+
+export const deleteFutureCardExpenses = async (cardId: string, seriesId: string, fromDate: Date): Promise<void> => {
+  const expensesCollectionRef = collection(db, CREDIT_CARDS_COLLECTION, cardId, CARD_EXPENSES_SUBCOLLECTION);
+  const q = query(
+    expensesCollectionRef,
+    where('seriesId', '==', seriesId)
+  );
+
+  const querySnapshot = await getDocs(q);
+  const batch = writeBatch(db);
+  
+  const fromTime = fromDate.getTime();
+
+  querySnapshot.forEach(doc => {
+    const expense = fromFirestoreCardExpense(doc);
+    const expenseTime = expense.date.getTime();
+
+    if (expenseTime >= fromTime) {
+      batch.delete(doc.ref);
+    }
+  });
+  
+  await batch.commit();
 };
 
 export const closeCreditCardBill = async (
