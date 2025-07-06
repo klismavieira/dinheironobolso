@@ -125,7 +125,8 @@ export default function Home() {
 
   const handleDeleteTransaction = (transaction: Transaction) => {
     setTransactionToDelete(transaction);
-    if (transaction.isRecurring) {
+    // Only treat as a series if it's marked as recurring AND has a seriesId
+    if (transaction.isRecurring && transaction.seriesId) {
       setDeleteSeriesDialogOpen(true);
     } else {
       setDeleteSingleDialogOpen(true);
@@ -187,7 +188,7 @@ export default function Home() {
         });
       } else {
         // Logic for adding a new transaction
-        const { id, isFixed, endDate, ...dataToAdd } = values;
+        const { isFixed, endDate, ...dataToAdd } = values;
 
         if (isFixed) {
           // Recurring transaction
