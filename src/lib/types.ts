@@ -5,4 +5,6 @@ export type Transaction = {
   category: string;
   description: string;
   date: Date;
+  seriesId?: string;
+  installment?: string;
 };

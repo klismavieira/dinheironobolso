@@ -31,6 +31,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -45,6 +46,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const formSchema = z.object({
@@ -60,7 +62,19 @@ const formSchema = z.object({
     }
     return arg;
   }, z.date({ required_error: 'A data é obrigatória.' })),
+  isFixed: z.boolean().default(false),
+  installments: z.coerce.number().optional(),
+  seriesId: z.string().optional(),
+}).refine(data => {
+    if (data.isFixed && data.type === 'expense') {
+        return data.installments && data.installments >= 2;
+    }
+    return true;
+}, {
+    message: "O número de parcelas deve ser 2 ou mais.",
+    path: ["installments"],
 });
+
 
 export type FormValues = z.infer<typeof formSchema>;
 
@@ -86,9 +100,13 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      isFixed: false,
+    }
   });
   
   const transactionType = form.watch('type');
+  const isFixed = form.watch('isFixed');
   const availableCategories = transactionType === 'income' ? categories.income : categories.expense;
   const isEditing = !!transaction?.id;
   const categoryValue = form.watch('category');
@@ -103,6 +121,8 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           description: transaction.description,
           category: transaction.category,
           date: transaction.date || new Date(),
+          isFixed: !!transaction.seriesId,
+          seriesId: transaction.seriesId,
         });
       } else { // isCreating
         form.reset({
@@ -112,6 +132,9 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           description: '',
           category: undefined,
           date: new Date(),
+          isFixed: false,
+          installments: undefined,
+          seriesId: undefined,
         });
       }
     }
@@ -246,10 +269,54 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
                   </FormItem>
                 )}
               />
+               {transactionType === 'expense' && (
+                <div className="space-y-4">
+                    <FormField
+                    control={form.control}
+                    name="isFixed"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                            <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={isEditing}
+                            />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                            Despesa Recorrente/Parcelada
+                        </FormLabel>
+                        </FormItem>
+                    )}
+                    />
+                    {isFixed && !isEditing && (
+                    <FormField
+                        control={form.control}
+                        name="installments"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Número de Parcelas</FormLabel>
+                            <FormControl>
+                            <Input
+                                type="number"
+                                placeholder="Ex: 12"
+                                min="2"
+                                disabled={isEditing}
+                                {...field}
+                                value={field.value ?? ''}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    )}
+                </div>
+              )}
 
               <DialogFooter>
                  <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                <Button type="submit">{isEditing ? 'Salvar Alterações' : 'Adicionar'}</Button>
+                <Button type="submit" disabled={form.formState.isSubmitting}>{isEditing ? 'Salvar Alterações' : 'Adicionar'}</Button>
               </DialogFooter>
             </form>
           </Form>

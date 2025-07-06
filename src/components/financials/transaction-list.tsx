@@ -44,6 +44,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete }: Trans
                         <p className="font-medium">{transaction.description}</p>
                         <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
                           <Badge variant="outline">{transaction.category}</Badge>
+                          {transaction.installment && <Badge variant="secondary">{transaction.installment}</Badge>}
                           <span>{formatDate(transaction.date)}</span>
                         </div>
                       </div>

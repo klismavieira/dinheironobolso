@@ -7,6 +7,8 @@ import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
+  deleteFutureTransactions,
+  addTransactionsBatch,
   onCategoriesUpdate,
   type Categories,
 } from '@/lib/firestoreService';
@@ -29,7 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format, startOfMonth, endOfMonth, setMonth, getMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, setMonth, getMonth, addMonths } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -43,7 +46,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> | null>(null);
-  const [transactionToDeleteId, setTransactionToDeleteId] = useState<string | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -110,47 +113,75 @@ export default function Home() {
   };
 
   const handleDeleteTransaction = (transaction: Transaction) => {
-    setTransactionToDeleteId(transaction.id);
+    setTransactionToDelete(transaction);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!transactionToDeleteId) return;
+  const handleConfirmDelete = async (scope: 'single' | 'future' = 'single') => {
+    if (!transactionToDelete) return;
+    
     try {
-      await deleteTransaction(transactionToDeleteId);
-      toast({
-        title: "Transação excluída!",
-        description: "A transação foi removida com sucesso.",
-        variant: 'destructive'
-      });
+      if (scope === 'future' && transactionToDelete.seriesId) {
+        await deleteFutureTransactions(transactionToDelete.seriesId, transactionToDelete.date);
+        toast({
+          title: "Transações futuras excluídas!",
+          description: "A série foi removida com sucesso a partir desta data.",
+          variant: 'destructive'
+        });
+      } else {
+        await deleteTransaction(transactionToDelete.id);
+        toast({
+          title: "Transação excluída!",
+          description: "A transação foi removida com sucesso.",
+          variant: 'destructive'
+        });
+      }
     } catch (error) {
        toast({
         title: "Erro ao excluir",
-        description: "Não foi possível remover a transação.",
+        description: "Não foi possível remover a(s) transação(ões).",
         variant: "destructive",
       });
     } finally {
-      setTransactionToDeleteId(null);
+      setTransactionToDelete(null);
     }
   };
   
   const handleSaveTransaction = async (values: FormValues) => {
     try {
-      const { id, ...data } = values;
+      const { id, isFixed, installments, ...transactionData } = values;
   
       if (id) {
         // --- UPDATE ---
-        await updateTransaction(id, data);
+        await updateTransaction(id, transactionData);
         toast({
           title: "Transação atualizada!",
           description: "Sua transação foi atualizada com sucesso.",
         });
       } else {
         // --- CREATE ---
-        await addTransaction(data);
-        toast({
-          title: "Transação adicionada!",
-          description: "Sua nova transação foi adicionada com sucesso.",
-        });
+        if (transactionData.type === 'expense' && isFixed && installments && installments >= 2) {
+          const seriesId = uuidv4();
+          const batchData: Omit<Transaction, 'id'>[] = [];
+          for (let i = 0; i < installments; i++) {
+            batchData.push({
+              ...transactionData,
+              date: addMonths(transactionData.date, i),
+              seriesId,
+              installment: `${i + 1}/${installments}`,
+            });
+          }
+          await addTransactionsBatch(batchData);
+          toast({
+            title: "Despesas recorrentes adicionadas!",
+            description: `${installments} transações foram criadas com sucesso.`,
+          });
+        } else {
+          await addTransaction(transactionData);
+          toast({
+            title: "Transação adicionada!",
+            description: "Sua nova transação foi adicionada com sucesso.",
+          });
+        }
       }
     } catch (error) {
       console.error(error);
@@ -304,18 +335,42 @@ export default function Home() {
         onSave={handleSaveTransaction}
         categories={categories}
       />
-      <AlertDialog open={!!transactionToDeleteId} onOpenChange={(open) => !open && setTransactionToDeleteId(null)}>
+      <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Essa ação não pode ser desfeita. Isso excluirá permanentemente a sua transação.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTransactionToDeleteId(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>Continuar</AlertDialogAction>
-          </AlertDialogFooter>
+          {transactionToDelete?.seriesId ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir Transação Recorrente</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta transação faz parte de uma série. O que você gostaria de excluir?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2 sm:gap-2">
+                <AlertDialogAction onClick={() => handleConfirmDelete('single')}>
+                  Excluir apenas esta transação
+                </AlertDialogAction>
+                <AlertDialogAction onClick={() => handleConfirmDelete('future')}>
+                  Excluir esta e as futuras
+                </AlertDialogAction>
+                <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>
+                  Cancelar
+                </AlertDialogCancel>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Essa ação não pode ser desfeita. Isso excluirá permanentemente a sua transação.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleConfirmDelete('single')}>Continuar</AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </div>
