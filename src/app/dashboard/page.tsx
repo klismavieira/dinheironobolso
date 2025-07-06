@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AnnualSummaryChart, type ChartData } from '@/components/financials/annual-summary-chart';
+import { CategoryPieChart, type PieChartData } from '@/components/financials/category-pie-chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [pieData, setPieData] = useState<PieChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
@@ -47,9 +49,8 @@ export default function DashboardPage() {
 
       const transactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
 
+      // --- Line Chart Data Processing ---
       const monthlyData: { [key: string]: { income: number; expense: number } } = {};
-
-      // Group transactions by month
       transactions.forEach(t => {
         const monthKey = format(t.date, 'MMM/yy', { locale: ptBR });
         if (!monthlyData[monthKey]) {
@@ -61,32 +62,48 @@ export default function DashboardPage() {
           monthlyData[monthKey].expense += t.amount;
         }
       });
-
-      // Get all months in the selected interval to prevent gaps in the chart
-      const intervalMonths = eachMonthOfInterval({
-        start: dateRange.from,
-        end: dateRange.to,
-      });
-
-      const data: ChartData[] = intervalMonths.map(monthDate => {
+      const intervalMonths = eachMonthOfInterval({ start: dateRange.from, end: dateRange.to });
+      const lineChartData: ChartData[] = intervalMonths.map(monthDate => {
         const monthKey = format(monthDate, 'MMM/yy', { locale: ptBR });
         const monthAggregates = monthlyData[monthKey] || { income: 0, expense: 0 };
-
-        const faturamento = monthAggregates.income;
-        const despesa = monthAggregates.expense;
-        const saldo = faturamento - despesa;
-
         const monthLabel = format(monthDate, 'MMM/yy', { locale: ptBR });
-
         return {
           month: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1),
-          Faturamento: faturamento,
-          Despesa: despesa,
-          Saldo: saldo,
+          Faturamento: monthAggregates.income,
+          Despesa: monthAggregates.expense,
+          Saldo: monthAggregates.income - monthAggregates.expense,
         };
       });
+      setChartData(lineChartData);
 
-      setChartData(data);
+      // --- Pie Chart Data Processing ---
+      const expenseByCategory = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((acc, t) => {
+          if (!acc[t.category]) {
+            acc[t.category] = 0;
+          }
+          acc[t.category] += t.amount;
+          return acc;
+        }, {} as { [key: string]: number });
+
+      const colors = [
+        'hsl(var(--chart-1))',
+        'hsl(var(--chart-2))',
+        'hsl(var(--chart-3))',
+        'hsl(var(--chart-4))',
+        'hsl(var(--chart-5))',
+      ];
+      
+      const pieChartData: PieChartData[] = Object.entries(expenseByCategory)
+        .map(([category, total], index) => ({
+          category,
+          total,
+          fill: colors[index % colors.length],
+        }))
+        .sort((a, b) => b.total - a.total);
+
+      setPieData(pieChartData);
       setLoading(false);
     };
 
@@ -176,19 +193,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Faturamento/Despesa</CardTitle>
-          <CardDescription>Resumo do período selecionado.</CardDescription>
-        </CardHeader>
-        <CardContent className="pl-2">
-          {loading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AnnualSummaryChart data={chartData} />
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="lg:col-span-3">
+            <Card>
+                <CardHeader>
+                <CardTitle>Faturamento/Despesa</CardTitle>
+                <CardDescription>Resumo do período selecionado.</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                {loading ? (
+                    <Skeleton className="h-[400px] w-full" />
+                ) : (
+                    <AnnualSummaryChart data={chartData} />
+                )}
+                </CardContent>
+            </Card>
+        </div>
+        <div className="lg:col-span-2">
+           {loading ? (
+             <Skeleton className="h-full w-full min-h-[500px]" />
+           ) : (
+            pieData.length > 0 ? <CategoryPieChart data={pieData} /> : <Card className="flex items-center justify-center h-full min-h-[500px]"><CardDescription>Nenhuma despesa no período.</CardDescription></Card>
+           )}
+        </div>
+      </div>
     </div>
   );
 }
