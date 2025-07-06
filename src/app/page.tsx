@@ -305,8 +305,8 @@ export default function Home() {
   const expenseTransactions = transactions.filter((t) => t.type === 'expense');
 
   const handleMonthClick = (monthIndex: number) => {
-    const today = new Date();
-    const targetMonthDate = setMonth(today, monthIndex);
+    const referenceDate = dateRange?.from || new Date();
+    const targetMonthDate = setMonth(referenceDate, monthIndex);
     setDateRange({
       from: startOfMonth(targetMonthDate),
       to: endOfMonth(targetMonthDate),
@@ -331,7 +331,8 @@ export default function Home() {
 
   const activeMonth = getActiveMonth();
   const months = Array.from({ length: 12 }, (_, i) => {
-      const monthName = format(setMonth(new Date(), i), 'MMM', { locale: ptBR });
+      const referenceDate = dateRange?.from || new Date();
+      const monthName = format(setMonth(referenceDate, i), 'MMM', { locale: ptBR });
       return monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.', '');
   });
 
