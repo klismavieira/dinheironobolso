@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Transaction } from '@/lib/types';
 import {
   addTransaction,
@@ -13,7 +13,6 @@ import {
   type Categories,
   getTransactionsForPeriod,
   getTotalTransactionCount,
-  onTransactionsUpdate,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -55,6 +54,28 @@ export default function Home() {
   const [previousBalance, setPreviousBalance] = useState(0);
   const [totalTransactionsCount, setTotalTransactionsCount] = useState<number | null>(null);
 
+  const fetchTransactionsInRange = useCallback(async () => {
+    if (!dateRange?.from || !dateRange?.to) {
+      setTransactions([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+      setTransactions(fetchedTransactions);
+    } catch (error) {
+      console.error("Failed to fetch transactions:", error);
+      const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
+      toast({
+        title: "Erro ao carregar transações",
+        description,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
   useEffect(() => {
     // This effect runs only on the client, after hydration, to avoid mismatch
     setDateRange({
@@ -79,34 +100,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!dateRange?.from || !dateRange?.to) {
-      setTransactions([]);
-      return;
-    }
-
-    setLoading(true);
-    const unsubscribe = onTransactionsUpdate(
-      dateRange.from,
-      dateRange.to,
-      (fetchedTransactions) => {
-        setTransactions(fetchedTransactions);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Failed to fetch transactions:", error);
-        const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
-        toast({
-          title: "Erro ao carregar transações",
-          description,
-          variant: "destructive",
-        });
-        setLoading(false);
-      }
-    );
-
-    // Cleanup subscription on component unmount or when dateRange changes
-    return () => unsubscribe();
-  }, [dateRange]);
+    fetchTransactionsInRange();
+  }, [fetchTransactionsInRange]);
 
   useEffect(() => {
     if (!dateRange?.from) {
@@ -197,6 +192,7 @@ export default function Home() {
         title: "Status alterado!",
         description: "O status de pagamento da transação foi atualizado.",
       });
+      fetchTransactionsInRange();
     } catch (error) {
       console.error("Error updating paid status:", error);
       const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
@@ -229,6 +225,7 @@ export default function Home() {
           variant: 'destructive'
         });
       }
+      fetchTransactionsInRange();
     } catch (error) {
        const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
        toast({
@@ -310,6 +307,7 @@ export default function Home() {
           });
         }
       }
+      fetchTransactionsInRange();
     } catch (error) {
       console.error(error);
       const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";

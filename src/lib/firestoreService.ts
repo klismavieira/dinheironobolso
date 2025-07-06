@@ -36,47 +36,6 @@ const fromFirestore = (docSnapshot: any): Transaction => {
   } as Transaction;
 };
 
-export const onTransactionsUpdate = (
-  startDate: Date,
-  endDate: Date,
-  onUpdate: (transactions: Transaction[]) => void,
-  onError: (error: Error) => void
-) => {
-  const startTimestamp = Timestamp.fromDate(startDate);
-  const endTimestamp = Timestamp.fromDate(endDate);
-
-  const q = query(
-    collection(db, TRANSACTIONS_COLLECTION),
-    where('date', '>=', startTimestamp),
-    where('date', '<=', endTimestamp),
-  );
-
-  const unsubscribe = onSnapshot(
-    q,
-    (querySnapshot) => {
-      try {
-        const transactions = querySnapshot.docs.map(fromFirestore);
-        // Sort on the client side to avoid index requirements
-        transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
-        onUpdate(transactions);
-      } catch (e) {
-        console.error("Error processing transaction data:", e);
-        if (e instanceof Error) {
-            onError(new Error(`Erro ao processar dados da transação: ${e.message}`));
-        } else {
-            onError(new Error("Ocorreu um erro desconhecido ao processar as transações."));
-        }
-      }
-    },
-    (error) => {
-      console.error('Error listening to transaction updates:', error);
-      onError(new Error(`Não foi possível buscar as transações: ${error.message}`));
-    }
-  );
-
-  return unsubscribe;
-};
-
 export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
   const startTimestamp = Timestamp.fromDate(startDate);
   const endTimestamp = Timestamp.fromDate(endDate);
