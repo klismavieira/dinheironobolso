@@ -7,7 +7,10 @@ import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
+  onCategoriesUpdate,
+  type Categories,
 } from '@/lib/firestoreService';
+import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { Header } from '@/components/layout/header';
 import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';
@@ -36,6 +39,7 @@ export default function Home() {
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
 
   useEffect(() => {
     const unsubscribe = onTransactionsUpdate(
@@ -57,6 +61,25 @@ export default function Home() {
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [toast]);
+  
+  useEffect(() => {
+    const unsubscribe = onCategoriesUpdate(
+      (updatedCategories) => {
+        setCategories(updatedCategories);
+      },
+      (error) => {
+        console.error("Error fetching categories:", error);
+        toast({
+          title: "Erro ao buscar categorias",
+          description: "Não foi possível carregar as categorias personalizadas.",
+          variant: "destructive",
+        });
+      }
+    );
+
+    return () => unsubscribe();
+  }, [toast]);
+
 
   const handleAddTransaction = (type: 'income' | 'expense') => {
     setCurrentTransaction({ type });
@@ -216,6 +239,7 @@ export default function Home() {
         onOpenChange={setDialogOpen}
         transaction={currentTransaction}
         onSave={handleSaveTransaction}
+        categories={categories}
       />
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

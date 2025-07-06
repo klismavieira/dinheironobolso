@@ -8,11 +8,15 @@ import {
   orderBy,
   Timestamp,
   onSnapshot,
+  setDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Transaction } from './types';
+import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from './constants';
 
 const TRANSACTIONS_COLLECTION = 'transactions';
+const CATEGORIES_COLLECTION = 'categories';
 
 // Helper to convert Firestore data to Transaction type
 const fromFirestore = (docSnapshot: any): Transaction => {
@@ -56,4 +60,58 @@ export const updateTransaction = async (id: string, transactionData: Partial<Omi
 
 export const deleteTransaction = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, TRANSACTIONS_COLLECTION, id));
+};
+
+export type Categories = {
+  income: string[];
+  expense: string[];
+}
+
+export const onCategoriesUpdate = (
+  onUpdate: (categories: Categories) => void,
+  onError: (error: Error) => void
+) => {
+  const docRef = doc(db, CATEGORIES_COLLECTION, 'user_defined');
+
+  const unsubscribe = onSnapshot(
+    docRef,
+    async (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const categories: Categories = {
+          income: data.income || INCOME_CATEGORIES,
+          expense: data.expense || EXPENSE_CATEGORIES
+        };
+        onUpdate(categories);
+      } else {
+        const defaultCategories = {
+          income: INCOME_CATEGORIES,
+          expense: EXPENSE_CATEGORIES,
+        };
+        try {
+          await setDoc(docRef, defaultCategories);
+          onUpdate(defaultCategories);
+        } catch(e) {
+            if (e instanceof Error) {
+                onError(e)
+            }
+        }
+      }
+    },
+    (error) => {
+      console.error("Error listening to category updates:", error);
+      onError(error);
+    }
+  );
+
+  return unsubscribe;
+};
+
+export const addCategory = async (type: 'income' | 'expense', newCategory: string): Promise<void> => {
+  const docRef = doc(db, CATEGORIES_COLLECTION, 'user_defined');
+  const fieldToUpdate = type === 'income' ? 'income' : 'expense';
+  
+  await updateDoc(docRef, {
+    [fieldToUpdate]: arrayUnion(newCategory),
+  });
 };
