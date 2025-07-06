@@ -2,10 +2,6 @@
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/klismavieira/dinheironobolso.git"
-  },
   "scripts": {
     "dev": "next dev --turbopack",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
