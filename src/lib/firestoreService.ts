@@ -5,7 +5,6 @@ import {
   deleteDoc,
   doc,
   query,
-  orderBy,
   Timestamp,
   onSnapshot,
   setDoc,
@@ -43,11 +42,13 @@ export const onTransactionsUpdate = (
   onUpdate: (transactions: Transaction[]) => void,
   onError: (error: Error) => void
 ) => {
+  const startTimestamp = Timestamp.fromDate(startDate);
+  const endTimestamp = Timestamp.fromDate(endDate);
+
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
-    where('date', '>=', startDate),
-    where('date', '<=', endDate),
-    orderBy('date', 'desc')
+    where('date', '>=', startTimestamp),
+    where('date', '<=', endTimestamp),
   );
 
   const unsubscribe = onSnapshot(
@@ -55,6 +56,8 @@ export const onTransactionsUpdate = (
     (querySnapshot) => {
       try {
         const transactions = querySnapshot.docs.map(fromFirestore);
+        // Sort on the client side to avoid index requirements
+        transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
         onUpdate(transactions);
       } catch (e) {
         console.error("Error processing transaction data:", e);
@@ -75,15 +78,21 @@ export const onTransactionsUpdate = (
 };
 
 export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
+  const startTimestamp = Timestamp.fromDate(startDate);
+  const endTimestamp = Timestamp.fromDate(endDate);
+
   const q = query(
     collection(db, TRANSACTIONS_COLLECTION),
-    where('date', '>=', startDate),
-    where('date', '<=', endDate)
+    where('date', '>=', startTimestamp),
+    where('date', '<=', endTimestamp)
   );
 
   try {
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
+    const transactions = querySnapshot.docs.map(fromFirestore);
+    // Sort on client to avoid needing a composite index
+    transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+    return transactions;
   } catch (error) {
     console.error("Firebase Error: Failed to get transactions for period.", error);
     if (error instanceof Error) {

@@ -13,6 +13,7 @@ import {
   type Categories,
   getTransactionsForPeriod,
   getTotalTransactionCount,
+  onTransactionsUpdate,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -53,9 +54,6 @@ export default function Home() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [previousBalance, setPreviousBalance] = useState(0);
   const [totalTransactionsCount, setTotalTransactionsCount] = useState<number | null>(null);
-  const [version, setVersion] = useState(0);
-
-  const forceRefetch = () => setVersion(v => v + 1);
 
   useEffect(() => {
     // This effect runs only on the client, after hydration, to avoid mismatch
@@ -86,14 +84,15 @@ export default function Home() {
       return;
     }
 
-    const fetchTransactions = async () => {
-      setLoading(true);
-      try {
-        const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
-        // Sort transactions by date descending, as this is no longer done in the query
-        fetchedTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+    setLoading(true);
+    const unsubscribe = onTransactionsUpdate(
+      dateRange.from,
+      dateRange.to,
+      (fetchedTransactions) => {
         setTransactions(fetchedTransactions);
-      } catch (error) {
+        setLoading(false);
+      },
+      (error) => {
         console.error("Failed to fetch transactions:", error);
         const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
         toast({
@@ -101,13 +100,13 @@ export default function Home() {
           description,
           variant: "destructive",
         });
-      } finally {
         setLoading(false);
       }
-    };
+    );
 
-    fetchTransactions();
-  }, [dateRange, version]);
+    // Cleanup subscription on component unmount or when dateRange changes
+    return () => unsubscribe();
+  }, [dateRange]);
 
   useEffect(() => {
     if (!dateRange?.from) {
@@ -121,6 +120,7 @@ export default function Home() {
         const prevMonthStart = startOfMonth(prevMonth);
         const prevMonthEnd = endOfMonth(prevMonth);
 
+        // This fetch is for a different period, so it remains a one-time fetch
         const prevMonthTransactions = await getTransactionsForPeriod(prevMonthStart, prevMonthEnd);
         
         const income = prevMonthTransactions
@@ -146,7 +146,7 @@ export default function Home() {
     };
 
     calculatePreviousBalance();
-  }, [dateRange, version]);
+  }, [dateRange]);
   
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
@@ -207,7 +207,6 @@ export default function Home() {
       });
     } finally {
       setTransactionToTogglePaid(null);
-      forceRefetch();
     }
   };
 
@@ -239,7 +238,6 @@ export default function Home() {
       });
     } finally {
       setTransactionToDelete(null);
-      forceRefetch();
     }
   };
   
@@ -305,8 +303,6 @@ export default function Home() {
             description: `${numInstallments} transações foram criadas com sucesso.`,
           });
         } else {
-          // For a single transaction, we pass the clean base data.
-          // This object does not have `seriesId` or `installment`, solving the bug.
           await addTransaction(baseTransactionData);
           toast({
             title: "Transação adicionada!",
@@ -314,7 +310,6 @@ export default function Home() {
           });
         }
       }
-      forceRefetch();
     } catch (error) {
       console.error(error);
       const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";
