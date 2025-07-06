@@ -92,35 +92,32 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
         <h2 className="text-lg font-medium mb-3 text-muted-foreground">Resumo Realizado</h2>
         <div className="grid gap-4 md:grid-cols-3 md:gap-8">
           <Card className="shadow-none border-dashed">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium">Receitas Pagas</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">{formatCurrency(paidIncome)}</div>
-              <p className="text-xs text-muted-foreground">Total de entradas recebidas</p>
+            <CardContent className="p-3">
+              <div className="flex flex-row items-center justify-between space-y-0 mb-1">
+                <p className="text-xs font-medium text-muted-foreground">Receitas Pagas</p>
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+              </div>
+              <div className="text-lg font-bold">{formatCurrency(paidIncome)}</div>
             </CardContent>
           </Card>
           <Card className="shadow-none border-dashed">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium">Despesas Pagas</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-bold">{formatCurrency(paidExpenses)}</div>
-              <p className="text-xs text-muted-foreground">Total de saídas efetivadas</p>
+            <CardContent className="p-3">
+              <div className="flex flex-row items-center justify-between space-y-0 mb-1">
+                <p className="text-xs font-medium text-muted-foreground">Despesas Pagas</p>
+                <CheckCircle2 className="h-4 w-4 text-destructive" />
+              </div>
+              <div className="text-lg font-bold">{formatCurrency(paidExpenses)}</div>
             </CardContent>
           </Card>
           <Card className="shadow-none border-dashed">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium">Saldo Realizado</CardTitle>
-              <Scale className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-xl font-bold ${paidBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+            <CardContent className="p-3">
+              <div className="flex flex-row items-center justify-between space-y-0 mb-1">
+                <p className="text-xs font-medium text-muted-foreground">Saldo Realizado</p>
+                <Scale className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className={`text-lg font-bold ${paidBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
                 {formatCurrency(paidBalance)}
               </div>
-              <p className="text-xs text-muted-foreground">Balanço das contas pagas</p>
             </CardContent>
           </Card>
         </div>
