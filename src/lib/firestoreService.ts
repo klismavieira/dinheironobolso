@@ -72,7 +72,7 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(fromFirestore);
   } catch (error) {
-    console.error('Firebase Error: Failed to get transactions for period.', error);
+    console.error("Firebase Error: Failed to get transactions for period.", error);
     if (error instanceof Error) {
       throw new Error(`Não foi possível buscar as transações do período: ${error.message}`);
     }
