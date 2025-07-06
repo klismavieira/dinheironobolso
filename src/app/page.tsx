@@ -49,6 +49,7 @@ export default function Home() {
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> & { editScope?: 'future' } | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+  const [transactionToTogglePaid, setTransactionToTogglePaid] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -122,9 +123,18 @@ export default function Home() {
     setTransactionToDelete(transaction);
   };
 
-  const handleTogglePaidStatus = async (transaction: Transaction) => {
+  const handleTogglePaidStatus = (transaction: Transaction) => {
+    setTransactionToTogglePaid(transaction);
+  };
+
+  const handleConfirmTogglePaid = async () => {
+    if (!transactionToTogglePaid) return;
     try {
-      await updateTransaction(transaction.id, { isPaid: !transaction.isPaid });
+      await updateTransaction(transactionToTogglePaid.id, { isPaid: !transactionToTogglePaid.isPaid });
+      toast({
+        title: "Status alterado!",
+        description: "O status de pagamento da transação foi atualizado.",
+      });
     } catch (error) {
       console.error("Error updating paid status:", error);
       toast({
@@ -132,6 +142,8 @@ export default function Home() {
         description: "Não foi possível alterar o status da transação.",
         variant: "destructive",
       });
+    } finally {
+      setTransactionToTogglePaid(null);
     }
   };
 
@@ -457,6 +469,20 @@ export default function Home() {
               </AlertDialogFooter>
             </>
           )}
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={!!transactionToTogglePaid} onOpenChange={(open) => !open && setTransactionToTogglePaid(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Alteração</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você deseja alterar o status de pagamento desta transação?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTransactionToTogglePaid(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmTogglePaid}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

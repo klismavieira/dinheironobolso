@@ -51,22 +51,21 @@ export function TransactionList({ title, transactions, onEdit, onDelete, onToggl
                           aria-label="Marcar como pago"
                           className="mt-1"
                         />
-                        <div className={cn("flex-1 space-y-1", transaction.isPaid && "text-muted-foreground")}>
-                          <p className={cn("font-medium", transaction.isPaid && "line-through")}>
+                        <div className="flex-1 space-y-1">
+                          <p className="font-medium">
                             {transaction.description}
                           </p>
                           <div className="text-sm flex items-center gap-2 flex-wrap">
                             <Badge variant="outline">{transaction.category}</Badge>
                             {transaction.installment && <Badge variant="secondary">{transaction.installment}</Badge>}
-                            <span className={cn(transaction.isPaid && "line-through")}>{formatDate(transaction.date)}</span>
+                            <span>{formatDate(transaction.date)}</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <span className={cn(
                           'font-bold text-sm',
-                           transaction.type === 'income' ? 'text-accent' : 'text-destructive',
-                           transaction.isPaid && "line-through text-muted-foreground"
+                           transaction.type === 'income' ? 'text-accent' : 'text-destructive'
                         )}>
                           {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                         </span>
