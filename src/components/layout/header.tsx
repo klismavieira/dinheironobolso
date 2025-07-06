@@ -1,6 +1,6 @@
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
-import { Home, LineChart } from 'lucide-react';
+import { Home, LineChart, Github } from 'lucide-react';
 import Link from 'next/link';
 
 export function Header() {
@@ -25,6 +25,12 @@ export function Header() {
               <Link href="/dashboard">
                 <LineChart className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Dashboard</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="https://github.com/klismavieira/dinheironobolso" target="_blank" rel="noopener noreferrer">
+                <Github className="h-5 w-5" />
+                <span className="sr-only">GitHub</span>
               </Link>
             </Button>
           </nav>
