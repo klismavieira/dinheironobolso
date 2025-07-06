@@ -26,7 +26,8 @@ import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [pieData, setPieData] = useState<PieChartData[]>([]);
+  const [expensePieData, setExpensePieData] = useState<PieChartData[]>([]);
+  const [incomePieData, setIncomePieData] = useState<PieChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
@@ -48,6 +49,13 @@ export default function DashboardPage() {
       setLoading(true);
 
       const transactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+      const colors = [
+        'hsl(var(--chart-1))',
+        'hsl(var(--chart-2))',
+        'hsl(var(--chart-3))',
+        'hsl(var(--chart-4))',
+        'hsl(var(--chart-5))',
+      ];
 
       // --- Line Chart Data Processing ---
       const monthlyData: { [key: string]: { income: number; expense: number } } = {};
@@ -76,7 +84,7 @@ export default function DashboardPage() {
       });
       setChartData(lineChartData);
 
-      // --- Pie Chart Data Processing ---
+      // --- Expense Pie Chart Data Processing ---
       const expenseByCategory = transactions
         .filter(t => t.type === 'expense')
         .reduce((acc, t) => {
@@ -87,15 +95,7 @@ export default function DashboardPage() {
           return acc;
         }, {} as { [key: string]: number });
 
-      const colors = [
-        'hsl(var(--chart-1))',
-        'hsl(var(--chart-2))',
-        'hsl(var(--chart-3))',
-        'hsl(var(--chart-4))',
-        'hsl(var(--chart-5))',
-      ];
-      
-      const pieChartData: PieChartData[] = Object.entries(expenseByCategory)
+      const expensePieChartData: PieChartData[] = Object.entries(expenseByCategory)
         .map(([category, total], index) => ({
           category,
           total,
@@ -103,7 +103,29 @@ export default function DashboardPage() {
         }))
         .sort((a, b) => b.total - a.total);
 
-      setPieData(pieChartData);
+      setExpensePieData(expensePieChartData);
+
+      // --- Income Pie Chart Data Processing ---
+      const incomeByCategory = transactions
+        .filter(t => t.type === 'income')
+        .reduce((acc, t) => {
+          if (!acc[t.category]) {
+            acc[t.category] = 0;
+          }
+          acc[t.category] += t.amount;
+          return acc;
+        }, {} as { [key: string]: number });
+      
+      const incomePieChartData: PieChartData[] = Object.entries(incomeByCategory)
+        .map(([category, total], index) => ({
+          category,
+          total,
+          fill: colors[index % colors.length],
+        }))
+        .sort((a, b) => b.total - a.total);
+
+      setIncomePieData(incomePieChartData);
+
       setLoading(false);
     };
 
@@ -209,11 +231,37 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col gap-4">
            {loading ? (
-             <Skeleton className="h-full w-full min-h-[500px]" />
+             <>
+              <Skeleton className="h-full w-full min-h-[450px]" />
+              <Skeleton className="h-full w-full min-h-[450px]" />
+             </>
            ) : (
-            pieData.length > 0 ? <CategoryPieChart data={pieData} /> : <Card className="flex items-center justify-center h-full min-h-[500px]"><CardDescription>Nenhuma despesa no período.</CardDescription></Card>
+            <>
+              {expensePieData.length > 0 ? (
+                <CategoryPieChart 
+                  data={expensePieData} 
+                  title="Despesas por Categoria" 
+                  description="Distribuição das despesas no período selecionado." 
+                />
+              ) : (
+                <Card className="flex items-center justify-center min-h-[450px]">
+                  <CardDescription>Nenhuma despesa no período.</CardDescription>
+                </Card>
+              )}
+              {incomePieData.length > 0 ? (
+                <CategoryPieChart 
+                  data={incomePieData} 
+                  title="Receitas por Categoria" 
+                  description="Distribuição das receitas no período selecionado." 
+                />
+              ) : (
+                <Card className="flex items-center justify-center min-h-[450px]">
+                  <CardDescription>Nenhuma receita no período.</CardDescription>
+                </Card>
+              )}
+            </>
            )}
         </div>
       </div>

@@ -25,6 +25,8 @@ export interface PieChartData {
 
 interface CategoryPieChartProps {
   data: PieChartData[]
+  title: string
+  description: string
 }
 
 const formatCurrency = (value: number) => {
@@ -34,7 +36,7 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-export function CategoryPieChart({ data }: CategoryPieChartProps) {
+export function CategoryPieChart({ data, title, description }: CategoryPieChartProps) {
   const chartConfig = React.useMemo(() => {
     return data.reduce((acc, item) => {
       acc[item.category] = {
@@ -45,17 +47,15 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
     }, {} as ChartConfig)
   }, [data])
 
-  const totalExpenses = React.useMemo(() => {
+  const totalValue = React.useMemo(() => {
     return data.reduce((acc, item) => acc + item.total, 0)
   }, [data])
 
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Despesas por Categoria</CardTitle>
-        <CardDescription>
-          Distribuição das despesas no período selecionado.
-        </CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
@@ -84,7 +84,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
         <ul className="grid gap-1.5 text-sm text-muted-foreground">
           {data
             .map((item) => {
-            const percentage = totalExpenses > 0 ? ((item.total / totalExpenses) * 100).toFixed(1) : "0.0";
+            const percentage = totalValue > 0 ? ((item.total / totalValue) * 100).toFixed(1) : "0.0";
             return (
               <li
                 key={item.category}
