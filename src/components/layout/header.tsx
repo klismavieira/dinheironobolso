@@ -1,4 +1,7 @@
 import { Logo } from '@/components/icons/logo';
+import { Button } from '@/components/ui/button';
+import { Home, LineChart } from 'lucide-react';
+import Link from 'next/link';
 
 export function Header() {
   return (
@@ -11,6 +14,20 @@ export function Header() {
               Dinheiro no Bolso
             </h1>
           </div>
+          <nav className="flex items-center gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/">
+                <Home className="mr-2 h-4 w-4" />
+                Transações
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/dashboard">
+                <LineChart className="mr-2 h-4 w-4" />
+                Dashboard
+              </Link>
+            </Button>
+          </nav>
         </div>
       </div>
     </header>

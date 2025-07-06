@@ -15,7 +15,6 @@ import {
   getTransactionsForPeriod,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
-import { Header } from '@/components/layout/header';
 import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';
 import { TransactionDialog, type FormValues } from '@/components/financials/transaction-dialog';
@@ -338,107 +337,104 @@ export default function Home() {
 
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <Header />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
-        <div className="flex items-center justify-center gap-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                id="date"
-                variant={"outline"}
-                className={cn(
-                  "w-[300px] justify-start text-left font-normal",
-                  !dateRange && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-                      {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
-                    </>
-                  ) : (
-                    format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
-                  )
+    <>
+      <div className="flex items-center justify-center gap-4">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              id="date"
+              variant={"outline"}
+              className={cn(
+                "w-[300px] justify-start text-left font-normal",
+                !dateRange && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateRange?.from ? (
+                dateRange.to ? (
+                  <>
+                    {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
+                    {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
+                  </>
                 ) : (
-                  <span>Selecione um período</span>
-                )}
+                  format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
+                )
+              ) : (
+                <span>Selecione um período</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={setDateRange}
+              numberOfMonths={2}
+              locale={ptBR}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-2">
+          {months.map((month, index) => (
+              <Button
+                  key={month}
+                  variant={activeMonth === index ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleMonthClick(index)}
+              >
+                  {month}
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="center">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-                locale={ptBR}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+          ))}
+      </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
-            {months.map((month, index) => (
-                <Button
-                    key={month}
-                    variant={activeMonth === index ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleMonthClick(index)}
-                >
-                    {month}
-                </Button>
-            ))}
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-3 md:gap-8">
+          <Skeleton className="h-[125px] w-full" />
+          <Skeleton className="h-[125px] w-full" />
+          <Skeleton className="h-[125px] w-full" />
         </div>
+      ) : (
+        <FinancialSummary transactions={transactions} previousBalance={previousBalance} />
+      )}
 
-        {loading ? (
-          <div className="grid gap-4 md:grid-cols-3 md:gap-8">
-            <Skeleton className="h-[125px] w-full" />
-            <Skeleton className="h-[125px] w-full" />
-            <Skeleton className="h-[125px] w-full" />
+      <div className="flex items-center justify-end gap-2">
+          <Button onClick={() => handleAddTransaction('income')}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Receita
+          </Button>
+          <Button onClick={() => handleAddTransaction('expense')} variant="destructive">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Despesa
+          </Button>
+      </div>
+
+      {loading ? (
+          <div className="grid gap-4 md:gap-8 md:grid-cols-2">
+              <Skeleton className="h-[522px] w-full" />
+              <Skeleton className="h-[522px] w-full" />
           </div>
-        ) : (
-          <FinancialSummary transactions={transactions} previousBalance={previousBalance} />
-        )}
-
-        <div className="flex items-center justify-end gap-2">
-            <Button onClick={() => handleAddTransaction('income')}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Adicionar Receita
-            </Button>
-            <Button onClick={() => handleAddTransaction('expense')} variant="destructive">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Adicionar Despesa
-            </Button>
-        </div>
-
-        {loading ? (
-            <div className="grid gap-4 md:gap-8 md:grid-cols-2">
-                <Skeleton className="h-[522px] w-full" />
-                <Skeleton className="h-[522px] w-full" />
-            </div>
-        ) : (
-            <div className="grid gap-4 md:gap-8 md:grid-cols-2">
-              <TransactionList
-                title="Receitas"
-                transactions={incomeTransactions}
-                onEdit={handleEditTransaction}
-                onDelete={handleDeleteTransaction}
-                onTogglePaid={handleTogglePaidStatus}
-              />
-              <TransactionList
-                title="Despesas"
-                transactions={expenseTransactions}
-                onEdit={handleEditTransaction}
-                onDelete={handleDeleteTransaction}
-                onTogglePaid={handleTogglePaidStatus}
-              />
-            </div>
-        )}
-      </main>
+      ) : (
+          <div className="grid gap-4 md:gap-8 md:grid-cols-2">
+            <TransactionList
+              title="Receitas"
+              transactions={incomeTransactions}
+              onEdit={handleEditTransaction}
+              onDelete={handleDeleteTransaction}
+              onTogglePaid={handleTogglePaidStatus}
+            />
+            <TransactionList
+              title="Despesas"
+              transactions={expenseTransactions}
+              onEdit={handleEditTransaction}
+              onDelete={handleDeleteTransaction}
+              onTogglePaid={handleTogglePaidStatus}
+            />
+          </div>
+      )}
       <TransactionDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -529,6 +525,6 @@ export default function Home() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
