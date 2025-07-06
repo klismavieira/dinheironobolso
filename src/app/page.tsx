@@ -77,7 +77,7 @@ export default function Home() {
       }
     };
     fetchTotalCount();
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     // Only fetch transactions when dateRange is defined
@@ -106,7 +106,7 @@ export default function Home() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [dateRange, toast]);
+  }, [dateRange]);
 
   useEffect(() => {
     if (!dateRange?.from) {
