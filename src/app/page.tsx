@@ -187,7 +187,7 @@ export default function Home() {
         });
       } else {
         // Logic for adding a new transaction
-        const { isFixed, endDate, ...dataToAdd } = values;
+        const { id, isFixed, endDate, ...dataToAdd } = values;
 
         if (isFixed) {
           // Recurring transaction
