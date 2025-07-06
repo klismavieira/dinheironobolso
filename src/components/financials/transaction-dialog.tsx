@@ -65,6 +65,7 @@ const formSchema = z.object({
   isFixed: z.boolean().default(false),
   installments: z.coerce.number().min(2, 'O número de parcelas deve ser 2 ou mais.').optional(),
   seriesId: z.string().optional(),
+  editScope: z.literal('future').optional(),
 });
 
 
@@ -73,7 +74,7 @@ export type FormValues = z.infer<typeof formSchema>;
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  transaction: Partial<Transaction> | null;
+  transaction: (Partial<Transaction> & { editScope?: 'future' }) | null;
   onSave: (values: FormValues) => void;
   categories: Categories;
 }
@@ -116,6 +117,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           date: transaction.date || new Date(),
           isFixed: !!transaction.seriesId,
           seriesId: transaction.seriesId,
+          editScope: transaction.editScope,
         });
       } else { // isCreating
         form.reset({
@@ -128,6 +130,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSave, cat
           isFixed: false,
           installments: undefined,
           seriesId: undefined,
+          editScope: undefined,
         });
       }
     }

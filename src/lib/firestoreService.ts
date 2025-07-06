@@ -78,6 +78,34 @@ export const updateTransaction = async (id: string, transactionData: Partial<Omi
   await updateDoc(transactionRef, transactionData);
 };
 
+export const updateFutureTransactions = async (
+  seriesId: string,
+  fromDate: Date,
+  newData: Partial<Omit<Transaction, 'id' | 'date' | 'seriesId' | 'installment' | 'type'>>
+): Promise<void> => {
+  const q = query(
+    collection(db, TRANSACTIONS_COLLECTION),
+    where('seriesId', '==', seriesId)
+  );
+
+  const querySnapshot = await getDocs(q);
+  const batch = writeBatch(db);
+  
+  const fromTime = fromDate.getTime();
+
+  querySnapshot.forEach(doc => {
+    const transaction = fromFirestore(doc);
+    const transactionTime = transaction.date.getTime();
+
+    if (transactionTime >= fromTime) {
+      batch.update(doc.ref, newData);
+    }
+  });
+  
+  await batch.commit();
+};
+
+
 export const deleteTransaction = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, TRANSACTIONS_COLLECTION, id));
 };

@@ -6,6 +6,7 @@ import {
   onTransactionsUpdate,
   addTransaction,
   updateTransaction,
+  updateFutureTransactions,
   deleteTransaction,
   deleteFutureTransactions,
   addTransactionsBatch,
@@ -45,8 +46,9 @@ export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> | null>(null);
+  const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> & { editScope?: 'future' } | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -108,8 +110,12 @@ export default function Home() {
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
-    setCurrentTransaction(transaction);
-    setDialogOpen(true);
+    if (transaction.seriesId) {
+      setTransactionToEdit(transaction); // Opens the new scope dialog
+    } else {
+      setCurrentTransaction(transaction); // Non-recurring: open dialog directly
+      setDialogOpen(true);
+    }
   };
 
   const handleDeleteTransaction = (transaction: Transaction) => {
@@ -148,18 +154,28 @@ export default function Home() {
   
   const handleSaveTransaction = async (values: FormValues) => {
     try {
-      const { id, isFixed, installments, ...transactionData } = values;
+      const { id, isFixed, installments, editScope, ...transactionData } = values;
   
       if (id) {
         // --- UPDATE ---
-        // Updating recurring transactions is complex and generally not recommended in this flow.
-        // The user can delete the series and create a new one.
-        // For simplicity, we only update the single transaction.
-        await updateTransaction(id, transactionData);
-        toast({
-          title: "Transação atualizada!",
-          description: "Sua transação foi atualizada com sucesso.",
-        });
+        if (editScope === 'future' && transactionData.seriesId) {
+          const updateData = {
+            amount: transactionData.amount,
+            description: transactionData.description,
+            category: transactionData.category,
+          };
+          await updateFutureTransactions(transactionData.seriesId, transactionData.date, updateData);
+          toast({
+            title: "Transações futuras atualizadas!",
+            description: "A série foi atualizada com sucesso a partir desta data.",
+          });
+        } else {
+          await updateTransaction(id, transactionData);
+          toast({
+            title: "Transação atualizada!",
+            description: "Sua transação foi atualizada com sucesso.",
+          });
+        }
       } else {
         // --- CREATE ---
         if (isFixed) {
@@ -339,6 +355,37 @@ export default function Home() {
         onSave={handleSaveTransaction}
         categories={categories}
       />
+      <AlertDialog open={!!transactionToEdit} onOpenChange={(open) => !open && setTransactionToEdit(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar Transação Recorrente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta transação faz parte de uma série. O que você gostaria de editar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2 sm:gap-2">
+            <AlertDialogAction onClick={() => {
+              if (!transactionToEdit) return;
+              setCurrentTransaction(transactionToEdit);
+              setDialogOpen(true);
+              setTransactionToEdit(null);
+            }}>
+              Editar apenas esta transação
+            </AlertDialogAction>
+            <AlertDialogAction onClick={() => {
+              if (!transactionToEdit) return;
+              setCurrentTransaction({ ...transactionToEdit, editScope: 'future' });
+              setDialogOpen(true);
+              setTransactionToEdit(null);
+            }}>
+              Editar esta e as futuras
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => setTransactionToEdit(null)}>
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!transactionToDelete} onOpenChange={(open) => !open && setTransactionToDelete(null)}>
         <AlertDialogContent>
           {transactionToDelete?.seriesId ? (
