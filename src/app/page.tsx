@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { addMonths, differenceInCalendarMonths, format, startOfMonth, endOfMonth } from 'date-fns';
+import { addMonths, differenceInCalendarMonths, format, startOfMonth, endOfMonth, setMonth, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -206,6 +206,38 @@ export default function Home() {
   const incomeTransactions = transactions.filter((t) => t.type === 'income');
   const expenseTransactions = transactions.filter((t) => t.type === 'expense');
 
+  const handleMonthClick = (monthIndex: number) => {
+    const today = new Date();
+    const targetMonthDate = setMonth(today, monthIndex);
+    setDateRange({
+      from: startOfMonth(targetMonthDate),
+      to: endOfMonth(targetMonthDate),
+    });
+  };
+
+  const getActiveMonth = () => {
+    if (!dateRange?.from || !dateRange?.to) {
+      return -1;
+    }
+    const fromStartOfMonth = startOfMonth(dateRange.from);
+    const fromEndOfMonth = endOfMonth(dateRange.from);
+
+    if (
+      dateRange.from.getTime() === fromStartOfMonth.getTime() &&
+      dateRange.to.getTime() === fromEndOfMonth.getTime()
+    ) {
+      return getMonth(dateRange.from);
+    }
+    return -1;
+  };
+
+  const activeMonth = getActiveMonth();
+  const months = Array.from({ length: 12 }, (_, i) => {
+      const monthName = format(setMonth(new Date(), i), 'MMM', { locale: ptBR });
+      return monthName.charAt(0).toUpperCase() + monthName.slice(1).replace('.', '');
+  });
+
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <Header />
@@ -248,6 +280,19 @@ export default function Home() {
               />
             </PopoverContent>
           </Popover>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-2">
+            {months.map((month, index) => (
+                <Button
+                    key={month}
+                    variant={activeMonth === index ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleMonthClick(index)}
+                >
+                    {month}
+                </Button>
+            ))}
         </div>
 
         {loading ? (
