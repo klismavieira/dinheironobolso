@@ -25,10 +25,11 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
-  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [annualChartData, setAnnualChartData] = useState<ChartData[]>([]);
   const [expensePieData, setExpensePieData] = useState<PieChartData[]>([]);
   const [incomePieData, setIncomePieData] = useState<PieChartData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [annualLoading, setAnnualLoading] = useState(true);
+  const [pieLoading, setPieLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
@@ -39,24 +40,14 @@ export default function DashboardPage() {
     });
   }, []);
 
+  // Fetch annual data for the line chart (runs once)
   useEffect(() => {
-    if (!dateRange?.from || !dateRange?.to) {
-      return;
-    }
+    const fetchAnnualData = async () => {
+      setAnnualLoading(true);
+      const yearStart = startOfYear(new Date());
+      const yearEnd = endOfYear(new Date());
+      const transactions = await getTransactionsForPeriod(yearStart, yearEnd);
 
-    const fetchChartData = async () => {
-      setLoading(true);
-
-      const transactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
-      const colors = [
-        'hsl(var(--chart-1))',
-        'hsl(var(--chart-2))',
-        'hsl(var(--chart-3))',
-        'hsl(var(--chart-4))',
-        'hsl(var(--chart-5))',
-      ];
-
-      // --- Line Chart Data Processing ---
       const monthlyData: { [key: string]: { income: number; expense: number } } = {};
       transactions.forEach(t => {
         const monthKey = format(t.date, 'MMM/yy', { locale: ptBR });
@@ -69,7 +60,8 @@ export default function DashboardPage() {
           monthlyData[monthKey].expense += t.amount;
         }
       });
-      const intervalMonths = eachMonthOfInterval({ start: dateRange.from, end: dateRange.to });
+      
+      const intervalMonths = eachMonthOfInterval({ start: yearStart, end: yearEnd });
       const lineChartData: ChartData[] = intervalMonths.map(monthDate => {
         const monthKey = format(monthDate, 'MMM/yy', { locale: ptBR });
         const monthAggregates = monthlyData[monthKey] || { income: 0, expense: 0 };
@@ -81,7 +73,30 @@ export default function DashboardPage() {
           Saldo: monthAggregates.income - monthAggregates.expense,
         };
       });
-      setChartData(lineChartData);
+
+      setAnnualChartData(lineChartData);
+      setAnnualLoading(false);
+    };
+
+    fetchAnnualData();
+  }, []);
+
+  // Fetch pie chart data based on selected dateRange
+  useEffect(() => {
+    if (!dateRange?.from || !dateRange?.to) {
+      return;
+    }
+
+    const fetchPieData = async () => {
+      setPieLoading(true);
+      const transactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+      const colors = [
+        'hsl(var(--chart-1))',
+        'hsl(var(--chart-2))',
+        'hsl(var(--chart-3))',
+        'hsl(var(--chart-4))',
+        'hsl(var(--chart-5))',
+      ];
 
       // --- Expense Pie Chart Data Processing ---
       const expenseByCategory = transactions
@@ -125,10 +140,10 @@ export default function DashboardPage() {
 
       setIncomePieData(incomePieChartData);
 
-      setLoading(false);
+      setPieLoading(false);
     };
 
-    fetchChartData();
+    fetchPieData();
   }, [dateRange]);
 
   const handleMonthClick = (monthIndex: number) => {
@@ -165,6 +180,20 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Faturamento/Despesa</CardTitle>
+          <CardDescription>Resumo do ano corrente.</CardDescription>
+        </CardHeader>
+        <CardContent className="pl-2">
+          {annualLoading ? (
+            <Skeleton className="h-[400px] w-full" />
+          ) : (
+            <AnnualSummaryChart data={annualChartData} />
+          )}
+        </CardContent>
+      </Card>
+      
       <div className="flex flex-col items-center justify-center gap-4">
         <Popover>
           <PopoverTrigger asChild>
@@ -215,22 +244,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Faturamento/Despesa</CardTitle>
-          <CardDescription>Resumo do período selecionado.</CardDescription>
-        </CardHeader>
-        <CardContent className="pl-2">
-          {loading ? (
-            <Skeleton className="h-[400px] w-full" />
-          ) : (
-            <AnnualSummaryChart data={chartData} />
-          )}
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {loading ? (
+        {pieLoading ? (
           <>
             <Skeleton className="h-full w-full min-h-[450px]" />
             <Skeleton className="h-full w-full min-h-[450px]" />
