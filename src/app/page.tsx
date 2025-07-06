@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import type { Transaction } from '@/lib/types';
 import {
   addTransaction,
@@ -53,28 +53,36 @@ export default function Home() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [previousBalance, setPreviousBalance] = useState(0);
   const [totalTransactionsCount, setTotalTransactionsCount] = useState<number | null>(null);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
-  const fetchTransactionsInRange = useCallback(async () => {
-    if (!dateRange?.from || !dateRange?.to) {
-      setTransactions([]);
-      return;
+  const refetchTransactions = () => setRefetchTrigger(prev => prev + 1);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!dateRange?.from || !dateRange?.to) {
+        setTransactions([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+        setTransactions(fetchedTransactions);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
+        toast({
+          title: "Erro ao carregar transações",
+          description,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (dateRange) {
+      fetchTransactions();
     }
-    setLoading(true);
-    try {
-      const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
-      setTransactions(fetchedTransactions);
-    } catch (error) {
-      console.error("Failed to fetch transactions:", error);
-      const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
-      toast({
-        title: "Erro ao carregar transações",
-        description,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange]);
+  }, [dateRange, refetchTrigger]);
 
   useEffect(() => {
     // This effect runs only on the client, after hydration, to avoid mismatch
@@ -98,10 +106,6 @@ export default function Home() {
     };
     fetchTotalCount();
   }, []);
-
-  useEffect(() => {
-    fetchTransactionsInRange();
-  }, [fetchTransactionsInRange]);
 
   useEffect(() => {
     if (!dateRange?.from) {
@@ -192,7 +196,7 @@ export default function Home() {
         title: "Status alterado!",
         description: "O status de pagamento da transação foi atualizado.",
       });
-      fetchTransactionsInRange();
+      refetchTransactions();
     } catch (error) {
       console.error("Error updating paid status:", error);
       const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
@@ -225,7 +229,7 @@ export default function Home() {
           variant: 'destructive'
         });
       }
-      fetchTransactionsInRange();
+      refetchTransactions();
     } catch (error) {
        const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
        toast({
@@ -307,7 +311,7 @@ export default function Home() {
           });
         }
       }
-      fetchTransactionsInRange();
+      refetchTransactions();
     } catch (error) {
       console.error(error);
       const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";
