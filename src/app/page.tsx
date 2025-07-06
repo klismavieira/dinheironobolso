@@ -13,6 +13,7 @@ import {
   type Categories,
   getTransactionsForPeriod,
   getTotalTransactionCount,
+  onTransactionsUpdate,
 } from '@/lib/firestoreService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
@@ -53,21 +54,23 @@ export default function Home() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [previousBalance, setPreviousBalance] = useState(0);
   const [totalTransactionsCount, setTotalTransactionsCount] = useState<number | null>(null);
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
-
-  const refetchTransactions = () => setRefetchTrigger(prev => prev + 1);
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!dateRange?.from || !dateRange?.to) {
-        setTransactions([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        const fetchedTransactions = await getTransactionsForPeriod(dateRange.from, dateRange.to);
+    if (!dateRange?.from || !dateRange?.to) {
+      setTransactions([]);
+      return;
+    }
+
+    setLoading(true);
+
+    const unsubscribe = onTransactionsUpdate(
+      dateRange.from,
+      dateRange.to,
+      (fetchedTransactions) => {
         setTransactions(fetchedTransactions);
-      } catch (error) {
+        setLoading(false);
+      },
+      (error) => {
         console.error("Failed to fetch transactions:", error);
         const description = error instanceof Error ? error.message : "Não foi possível carregar as transações.";
         toast({
@@ -75,17 +78,14 @@ export default function Home() {
           description,
           variant: "destructive",
         });
-      } finally {
         setLoading(false);
       }
-    };
-    if (dateRange) {
-      fetchTransactions();
-    }
-  }, [dateRange, refetchTrigger]);
+    );
+
+    return () => unsubscribe();
+  }, [dateRange]);
 
   useEffect(() => {
-    // This effect runs only on the client, after hydration, to avoid mismatch
     setDateRange({
       from: startOfMonth(new Date()),
       to: endOfMonth(new Date()),
@@ -119,7 +119,6 @@ export default function Home() {
         const prevMonthStart = startOfMonth(prevMonth);
         const prevMonthEnd = endOfMonth(prevMonth);
 
-        // This fetch is for a different period, so it remains a one-time fetch
         const prevMonthTransactions = await getTransactionsForPeriod(prevMonthStart, prevMonthEnd);
         
         const income = prevMonthTransactions
@@ -140,7 +139,7 @@ export default function Home() {
           description,
           variant: "destructive",
         });
-        setPreviousBalance(0); // Reset on error
+        setPreviousBalance(0);
       }
     };
 
@@ -173,9 +172,9 @@ export default function Home() {
 
   const handleEditTransaction = (transaction: Transaction) => {
     if (transaction.seriesId) {
-      setTransactionToEdit(transaction); // Opens the new scope dialog
+      setTransactionToEdit(transaction);
     } else {
-      setCurrentTransaction(transaction); // Non-recurring: open dialog directly
+      setCurrentTransaction(transaction);
       setDialogOpen(true);
     }
   };
@@ -196,7 +195,6 @@ export default function Home() {
         title: "Status alterado!",
         description: "O status de pagamento da transação foi atualizado.",
       });
-      refetchTransactions();
     } catch (error) {
       console.error("Error updating paid status:", error);
       const description = error instanceof Error ? error.message : "Não foi possível alterar o status da transação.";
@@ -229,7 +227,6 @@ export default function Home() {
           variant: 'destructive'
         });
       }
-      refetchTransactions();
     } catch (error) {
        const description = error instanceof Error ? error.message : "Não foi possível remover a(s) transação(ões).";
        toast({
@@ -247,7 +244,6 @@ export default function Home() {
       const { id, isFixed, installments, editScope } = values;
   
       if (id) {
-        // --- UPDATE ---
         if (editScope === 'future' && values.seriesId) {
           const updateData = {
             amount: values.amount,
@@ -260,7 +256,6 @@ export default function Home() {
             description: "A série foi atualizada com sucesso a partir desta data.",
           });
         } else {
-          // For single transaction update, we gather all editable fields.
           const transactionData = {
             type: values.type,
             amount: values.amount,
@@ -276,7 +271,6 @@ export default function Home() {
           });
         }
       } else {
-        // --- CREATE ---
         const baseTransactionData = {
           type: values.type,
           amount: values.amount,
@@ -311,7 +305,6 @@ export default function Home() {
           });
         }
       }
-      refetchTransactions();
     } catch (error) {
       console.error(error);
       const description = error instanceof Error ? error.message : "Não foi possível salvar a transação.";

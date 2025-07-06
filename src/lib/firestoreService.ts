@@ -61,6 +61,45 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
   }
 };
 
+export const onTransactionsUpdate = (
+  startDate: Date,
+  endDate: Date,
+  onUpdate: (transactions: Transaction[]) => void,
+  onError: (error: Error) => void
+) => {
+  const startTimestamp = Timestamp.fromDate(startDate);
+  const endTimestamp = Timestamp.fromDate(endDate);
+
+  const q = query(
+    collection(db, TRANSACTIONS_COLLECTION),
+    where('date', '>=', startTimestamp),
+    where('date', '<=', endTimestamp)
+  );
+
+  const unsubscribe = onSnapshot(
+    q,
+    (querySnapshot) => {
+      try {
+        const transactions = querySnapshot.docs.map(fromFirestore);
+        transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+        onUpdate(transactions);
+      } catch (err) {
+        if (err instanceof Error) {
+          onError(err);
+        } else {
+          onError(new Error('An unknown error occurred while processing transactions.'));
+        }
+      }
+    },
+    (error) => {
+      console.error("Firebase Error: onSnapshot failed.", error);
+      onError(new Error(`Não foi possível buscar as transações: ${error.message}`));
+    }
+  );
+
+  return unsubscribe;
+};
+
 export const getTotalTransactionCount = async (): Promise<number> => {
   const q = query(collection(db, TRANSACTIONS_COLLECTION));
   try {
