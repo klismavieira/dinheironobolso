@@ -7,6 +7,7 @@ import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
+  deleteFutureTransactions,
   onCategoriesUpdate,
   type Categories,
 } from '@/lib/firestoreService';
@@ -29,6 +30,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose
+} from '@/components/ui/dialog';
+import { collection, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { addMonths, differenceInCalendarMonths, format, startOfMonth, endOfMonth, setMonth, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
@@ -43,8 +55,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Partial<Transaction> | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [deleteSingleDialogOpen, setDeleteSingleDialogOpen] = useState(false);
+  const [deleteSeriesDialogOpen, setDeleteSeriesDialogOpen] = useState(false);
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
@@ -110,15 +123,19 @@ export default function Home() {
     setDialogOpen(true);
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    setTransactionToDelete(id);
-    setDeleteDialogOpen(true);
+  const handleDeleteTransaction = (transaction: Transaction) => {
+    setTransactionToDelete(transaction);
+    if (transaction.isRecurring) {
+      setDeleteSeriesDialogOpen(true);
+    } else {
+      setDeleteSingleDialogOpen(true);
+    }
   };
 
-  const confirmDelete = async () => {
+  const handleConfirmSingleDelete = async () => {
     if (!transactionToDelete) return;
     try {
-      await deleteTransaction(transactionToDelete);
+      await deleteTransaction(transactionToDelete.id);
       toast({
         title: "Transação excluída!",
         description: "A transação foi removida com sucesso.",
@@ -132,7 +149,29 @@ export default function Home() {
       });
     } finally {
       setTransactionToDelete(null);
-      setDeleteDialogOpen(false);
+      setDeleteSingleDialogOpen(false);
+      setDeleteSeriesDialogOpen(false); // Close both dialogs
+    }
+  };
+  
+  const handleConfirmSeriesDelete = async () => {
+    if (!transactionToDelete?.seriesId) return;
+    try {
+      await deleteFutureTransactions(transactionToDelete.seriesId, transactionToDelete.date);
+       toast({
+        title: "Transações futuras excluídas!",
+        description: "Esta transação e as futuras foram removidas.",
+        variant: 'destructive'
+      });
+    } catch (error) {
+       toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível remover as transações recorrentes.",
+        variant: "destructive",
+      });
+    } finally {
+      setTransactionToDelete(null);
+      setDeleteSeriesDialogOpen(false);
     }
   };
 
@@ -166,6 +205,7 @@ export default function Home() {
           }
 
           const installments = differenceInCalendarMonths(finalDate, startDate) + 1;
+          const seriesId = doc(collection(db, 'transactions')).id;
           
           for (let i = 0; i < installments; i++) {
             const newDate = addMonths(startDate, i);
@@ -177,6 +217,8 @@ export default function Home() {
               ...dataToAdd,
               date: newDate,
               description: newDescription,
+              isRecurring: true,
+              seriesId: seriesId,
             };
             await addTransaction(transactionData);
           }
@@ -186,7 +228,7 @@ export default function Home() {
           });
         } else {
           // Single transaction
-          await addTransaction(dataToAdd);
+          await addTransaction({ ...dataToAdd, isRecurring: false });
           toast({
             title: "Transação adicionada!",
             description: "Sua nova transação foi adicionada com sucesso.",
@@ -224,7 +266,7 @@ export default function Home() {
 
     if (
       dateRange.from.getTime() === fromStartOfMonth.getTime() &&
-      dateRange.to.getTime() === fromEndOfMonth.getTime()
+      dateRange.to?.getTime() === fromEndOfMonth.getTime()
     ) {
       return getMonth(dateRange.from);
     }
@@ -345,7 +387,7 @@ export default function Home() {
         onSave={handleSaveTransaction}
         categories={categories}
       />
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={deleteSingleDialogOpen} onOpenChange={setDeleteSingleDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
@@ -355,10 +397,34 @@ export default function Home() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Continuar</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmSingleDelete}>Continuar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={deleteSeriesDialogOpen} onOpenChange={setDeleteSeriesDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir Transação Recorrente</DialogTitle>
+            <DialogDescription>
+              Esta é uma transação recorrente. Escolha uma das opções abaixo para continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={handleConfirmSingleDelete}
+            >
+              Excluir somente esta transação
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmSeriesDelete}
+            >
+              Excluir esta e as transações futuras
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

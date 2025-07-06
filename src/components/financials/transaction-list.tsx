@@ -12,7 +12,7 @@ interface TransactionListProps {
   title: string;
   transactions: Transaction[];
   onEdit: (transaction: Transaction) => void;
-  onDelete: (id: string) => void;
+  onDelete: (transaction: Transaction) => void;
 }
 
 export function TransactionList({ title, transactions, onEdit, onDelete }: TransactionListProps) {
@@ -55,7 +55,7 @@ export function TransactionList({ title, transactions, onEdit, onDelete }: Trans
                           <Pencil className="h-4 w-4" />
                           <span className="sr-only">Editar</span>
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(transaction.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(transaction)}>
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Excluir</span>
                         </Button>

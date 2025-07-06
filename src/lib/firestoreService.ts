@@ -11,6 +11,8 @@ import {
   setDoc,
   arrayUnion,
   where,
+  writeBatch,
+  getDocs,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Transaction } from './types';
@@ -70,6 +72,22 @@ export const deleteTransaction = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, TRANSACTIONS_COLLECTION, id));
 };
 
+export const deleteFutureTransactions = async (seriesId: string, fromDate: Date): Promise<void> => {
+  const q = query(
+    collection(db, TRANSACTIONS_COLLECTION),
+    where('seriesId', '==', seriesId),
+    where('date', '>=', fromDate)
+  );
+
+  const querySnapshot = await getDocs(q);
+  const batch = writeBatch(db);
+  querySnapshot.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
+}
+
 export type Categories = {
   income: string[];
   expense: string[];
@@ -87,8 +105,8 @@ export const onCategoriesUpdate = (
       if (docSnap.exists()) {
         const data = docSnap.data();
         const categories: Categories = {
-          income: data.income || INCOME_CATEGORIES,
-          expense: data.expense || EXPENSE_CATEGORIES
+          income: [...INCOME_CATEGORIES, ...(data.income || [])],
+          expense: [...EXPENSE_CATEGORIES, ...(data.expense || [])]
         };
         onUpdate(categories);
       } else {
@@ -97,7 +115,8 @@ export const onCategoriesUpdate = (
           expense: EXPENSE_CATEGORIES,
         };
         try {
-          await setDoc(docRef, defaultCategories);
+          // Initialize with empty arrays for user-defined categories
+          await setDoc(docRef, { income: [], expense: [] });
           onUpdate(defaultCategories);
         } catch(e) {
             if (e instanceof Error) {

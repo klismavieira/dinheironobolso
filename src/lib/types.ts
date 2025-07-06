@@ -5,4 +5,6 @@ export type Transaction = {
   category: string;
   description: string;
   date: Date;
+  isRecurring?: boolean;
+  seriesId?: string;
 };
