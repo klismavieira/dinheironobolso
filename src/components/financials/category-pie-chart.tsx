@@ -16,6 +16,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
+import { cn } from "@/lib/utils"
 
 export interface PieChartData {
   category: string
@@ -27,6 +28,7 @@ interface CategoryPieChartProps {
   data: PieChartData[]
   title: string
   description: string
+  type: 'income' | 'expense'
 }
 
 const formatCurrency = (value: number) => {
@@ -36,7 +38,7 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-export function CategoryPieChart({ data, title, description }: CategoryPieChartProps) {
+export function CategoryPieChart({ data, title, description, type }: CategoryPieChartProps) {
   const chartConfig = React.useMemo(() => {
     return data.reduce((acc, item) => {
       acc[item.category] = {
@@ -52,7 +54,7 @@ export function CategoryPieChart({ data, title, description }: CategoryPieChartP
   }, [data])
 
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -60,7 +62,10 @@ export function CategoryPieChart({ data, title, description }: CategoryPieChartP
       <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
+          className={cn(
+            "mx-auto aspect-square",
+            type === 'income' ? 'max-h-[250px]' : 'max-h-[200px]'
+          )}
         >
           <PieChart>
             <ChartTooltip
@@ -74,7 +79,7 @@ export function CategoryPieChart({ data, title, description }: CategoryPieChartP
               data={data}
               dataKey="total"
               nameKey="category"
-              innerRadius={60}
+              innerRadius={type === 'income' ? 60 : 50}
               strokeWidth={5}
             />
           </PieChart>

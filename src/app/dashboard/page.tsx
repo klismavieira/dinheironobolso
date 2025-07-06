@@ -244,7 +244,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-start gap-4">
         {pieLoading ? (
           <>
             <Skeleton className="h-full w-full min-h-[450px]" />
@@ -256,7 +256,8 @@ export default function DashboardPage() {
               <CategoryPieChart 
                 data={incomePieData} 
                 title="Receitas por Categoria" 
-                description="Distribuição das receitas no período selecionado." 
+                description="Distribuição das receitas no período selecionado."
+                type="income"
               />
             ) : (
               <Card className="flex items-center justify-center min-h-[450px]">
@@ -267,7 +268,8 @@ export default function DashboardPage() {
               <CategoryPieChart 
                 data={expensePieData} 
                 title="Despesas por Categoria" 
-                description="Distribuição das despesas no período selecionado." 
+                description="Distribuição das despesas no período selecionado."
+                type="expense"
               />
             ) : (
               <Card className="flex items-center justify-center min-h-[450px]">
