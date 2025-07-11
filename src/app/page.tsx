@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -39,6 +40,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -53,6 +56,9 @@ export default function Home() {
   const [categories, setCategories] = useState<Categories>({ income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES });
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
 
   const forceRefetch = () => setRefetchTrigger(c => c + 1);
 
@@ -66,7 +72,8 @@ export default function Home() {
 
   // Fetch transactions for the selected period
   useEffect(() => {
-    if (!dateRange?.from || !dateRange?.to) {
+    if (!dateRange?.from || !dateRange?.to || authLoading || !user) {
+      if (!authLoading && !user) router.push('/login');
       return;
     }
 
@@ -97,7 +104,7 @@ export default function Home() {
       }
     };
     doFetch();
-  }, [refetchTrigger, dateRange, toast]);
+  }, [refetchTrigger, dateRange, toast, user, authLoading, router]);
 
   useEffect(() => {
     const unsubscribe = onCategoriesUpdate(
@@ -307,6 +314,14 @@ export default function Home() {
 
   const incomeTransactions = transactions.filter((t) => t.type === 'income');
   const expenseTransactions = transactions.filter((t) => t.type === 'expense');
+
+  if (authLoading || !user) {
+    return (
+       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+         <Skeleton className="w-full h-full" />
+       </div>
+    );
+   }
 
   return (
     <>

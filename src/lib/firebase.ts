@@ -1,8 +1,9 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth } from "firebase/auth";
+
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -18,6 +19,8 @@ const firebaseConfig = {
 // Avoid re-initializing the app on hot reloads
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const auth = getAuth(app);
+
 
 // Enable offline persistence
 enableIndexedDbPersistence(db)
@@ -33,4 +36,4 @@ enableIndexedDbPersistence(db)
     }
   });
 
-export { db };
+export { db, auth };
