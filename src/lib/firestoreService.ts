@@ -117,7 +117,7 @@ export const getTotalTransactionCount = async (): Promise<number> => {
   }
 };
 
-export const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'userId' | 'seriesId' | 'installment'>): Promise<void> => {
+export const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'seriesId' | 'installment'>): Promise<void> => {
   const userId = getCurrentUserId();
   try {
     await addDoc(collection(db, TRANSACTIONS_COLLECTION), { ...transactionData, userId });
@@ -130,7 +130,7 @@ export const addTransaction = async (transactionData: Omit<Transaction, 'id' | '
   }
 };
 
-export const addTransactionsBatch = async (transactions: Omit<Transaction, 'id' | 'userId'>[]): Promise<void> => {
+export const addTransactionsBatch = async (transactions: Omit<Transaction, 'id'>[]): Promise<void> => {
   const userId = getCurrentUserId();
   const batch = writeBatch(db);
   transactions.forEach(transactionData => {
