@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine, LabelList } from 'recharts';
@@ -13,7 +14,6 @@ export type ChartData = {
   month: string;
   Faturamento: number;
   Despesa: number;
-  Saldo: number;
 }
 
 interface AnnualSummaryChartProps {
@@ -28,10 +28,6 @@ const chartConfig = {
   Despesa: {
     label: "Despesa",
     color: "hsl(var(--destructive))",
-  },
-  Saldo: {
-    label: "Saldo",
-    color: "hsl(var(--accent))",
   },
 } satisfies ChartConfig
 
@@ -102,14 +98,6 @@ export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
           />
         </Bar>
         <Bar dataKey="Despesa" fill="var(--color-Despesa)" radius={[4, 4, 0, 0]}>
-          <LabelList
-            position="top"
-            offset={4}
-            className="fill-foreground text-xs"
-            formatter={formatCompactNumber}
-          />
-        </Bar>
-        <Bar dataKey="Saldo" fill="var(--color-Saldo)" radius={[4, 4, 0, 0]}>
           <LabelList
             position="top"
             offset={4}

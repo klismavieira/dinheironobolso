@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -70,7 +71,6 @@ export default function DashboardPage() {
           month: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1),
           Faturamento: monthAggregates.income,
           Despesa: monthAggregates.expense,
-          Saldo: monthAggregates.income - monthAggregates.expense,
         };
       });
 
