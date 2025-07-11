@@ -3,14 +3,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth, signInWithEmail, signInWithGoogleRedirect, signOutUser } from '@/lib/auth';
+import { auth, signInWithEmail, signInWithGoogle, signOutUser } from '@/lib/auth';
 
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithEmail: typeof signInWithEmail;
-  signInWithGoogleRedirect: typeof signInWithGoogleRedirect;
+  signInWithGoogle: typeof signInWithGoogle;
   signOutUser: typeof signOutUser;
 }
 
@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     loading,
     signInWithEmail,
-    signInWithGoogleRedirect,
+    signInWithGoogle,
     signOutUser,
   };
 

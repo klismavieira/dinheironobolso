@@ -4,7 +4,7 @@
 import { 
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
-  signInWithRedirect,
+  signInWithPopup,
   signOut,
 } from "firebase/auth";
 import { auth } from './firebase';
@@ -15,10 +15,8 @@ export const signInWithEmail = (email: string, password: string) => {
   return signInWithEmailAndPassword(auth, email, password);
 };
 
-export const signInWithGoogleRedirect = () => {
-  // This function initiates the redirect.
-  // The result is handled on the login page after the user is redirected back.
-  return signInWithRedirect(auth, googleProvider);
+export const signInWithGoogle = () => {
+  return signInWithPopup(auth, googleProvider);
 };
 
 export const signOutUser = () => {

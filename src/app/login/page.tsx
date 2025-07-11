@@ -37,7 +37,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signInWithEmail, signInWithGoogleRedirect, loading: authLoading } = useAuth();
+  const { signInWithEmail, signInWithGoogle, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -61,19 +61,24 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      // This will redirect the user to Google's sign-in page.
-      // After sign-in, the user will be redirected back, and the
-      // onAuthStateChanged listener in AuthProvider will handle the user state.
-      await signInWithGoogleRedirect();
+      await signInWithGoogle();
+      // On success, AuthProvider will handle navigation
     } catch (error) {
-      console.error('Google Login Redirect Error:', error);
       const firebaseError = error as FirebaseError;
+      console.error('Google Login Error:', firebaseError.code, firebaseError.message);
+      let description = 'Não foi possível fazer o login com o Google. Tente novamente.';
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        description = 'A janela de login foi fechada antes da conclusão. Por favor, tente novamente.';
+      } else if (firebaseError.code === 'auth/popup-blocked') {
+        description = 'O pop-up de login foi bloqueado pelo seu navegador. Por favor, habilite os pop-ups para este site e tente novamente.';
+      }
       toast({
         title: 'Falha no Login com Google',
-        description: firebaseError.message || 'Não foi possível iniciar o login com o Google. Tente novamente.',
+        description,
         variant: 'destructive',
       });
-      setGoogleLoading(false); // Set loading to false only if an error occurs here
+    } finally {
+      setGoogleLoading(false);
     }
   };
   
