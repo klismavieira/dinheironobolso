@@ -55,8 +55,9 @@ export default function LoginPage() {
         description: 'Verifique seu e-mail e senha e tente novamente.',
         variant: 'destructive',
       });
+      setLoading(false); // Reset loading state on error
     } finally {
-      setLoading(false);
+      // setLoading(false) is now in the catch block
     }
   };
 
@@ -65,11 +66,12 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       // No need to push, AppLayout will detect user and redirect.
-      // setLoading will be handled by the redirect and component unmount.
+      // The loading state will be handled by the redirect and component unmount.
     } catch (error) {
       console.error('Google Login Error:', error);
       const firebaseError = error as FirebaseError;
       let description = 'Não foi possível fazer o login com o Google. Tente novamente.';
+      // This is the crucial part: handling specific popup errors
       if (firebaseError.code === 'auth/popup-closed-by-user') {
         description = 'A janela de login foi fechada antes da conclusão. Por favor, tente novamente.';
       } else if (firebaseError.code === 'auth/popup-blocked-by-browser') {
@@ -81,7 +83,7 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-      setGoogleLoading(false); // This is crucial to re-enable the button on error.
+      setGoogleLoading(false); // This is the crucial fix: ensure loading state is always reset on error.
     }
   };
   
