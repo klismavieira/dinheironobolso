@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { signInWithEmail, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   // We don't need the router here anymore, AppLayout handles redirection on auth state change.
@@ -54,15 +55,17 @@ export default function LoginPage() {
         description: 'Verifique seu e-mail e senha e tente novamente.',
         variant: 'destructive',
       });
+    } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setGoogleLoading(true);
     try {
       await signInWithGoogle();
       // No need to push, AppLayout will detect user and redirect.
+      // setLoading will be handled by the redirect and component unmount.
     } catch (error) {
       console.error('Google Login Error:', error);
       const firebaseError = error as FirebaseError;
@@ -78,9 +81,11 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-      setLoading(false); // This is crucial to re-enable the button on error.
+      setGoogleLoading(false); // This is crucial to re-enable the button on error.
     }
   };
+  
+  const isAnyLoading = loading || googleLoading;
 
   return (
     <div className="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -106,7 +111,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                disabled={loading}
+                disabled={isAnyLoading}
               />
             </div>
             <div className="space-y-2">
@@ -120,10 +125,10 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Sua senha"
-                disabled={loading}
+                disabled={isAnyLoading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={isAnyLoading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Entrar
             </Button>
@@ -137,9 +142,9 @@ export default function LoginPage() {
             variant="outline"
             className="w-full"
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={isAnyLoading}
           >
-            {loading ? (
+            {googleLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <GoogleIcon className="mr-2 h-4 w-4" />
