@@ -37,16 +37,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const { signInWithEmail, signInWithGoogle } = useAuth();
   const { toast } = useToast();
+  // We don't need the router here anymore, AppLayout handles redirection on auth state change.
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await signInWithEmail(email, password);
-      router.push('/');
+      // No need to push, AppLayout will detect user and redirect.
     } catch (error) {
       console.error('Login Error:', error);
       toast({
@@ -62,7 +62,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      router.push('/');
+      // No need to push, AppLayout will detect user and redirect.
     } catch (error) {
       console.error('Google Login Error:', error);
       const firebaseError = error as FirebaseError;
@@ -78,7 +78,7 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-      setLoading(false);
+      setLoading(false); // This is crucial to re-enable the button on error.
     }
   };
 

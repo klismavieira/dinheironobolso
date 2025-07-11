@@ -11,7 +11,8 @@ import {
 } from "firebase/auth";
 import { auth } from './firebase';
 
-// Set persistence to local to allow for pop-up authentication in different browser contexts
+// Set persistence to local FIRST. This is crucial for pop-up authentication in different browser contexts like "Open in New Window".
+// This must be done before any other auth operation.
 setPersistence(auth, browserLocalPersistence);
 
 const googleProvider = new GoogleAuthProvider();
