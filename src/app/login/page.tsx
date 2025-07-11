@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,8 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { FirebaseError } from 'firebase/app';
-import { getRedirectResult } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -39,32 +37,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
-  const { signInWithEmail, signInWithGoogleRedirect, user } = useAuth();
+  const { signInWithEmail, signInWithGoogleRedirect, loading: authLoading } = useAuth();
   const { toast } = useToast();
-
-  useEffect(() => {
-    // This effect runs on page load to check if the user is returning from a Google login redirect.
-    const checkRedirect = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        // If result is null, it means the user just landed on the page, not from a redirect.
-        // If result is not null, the onAuthStateChanged listener in AuthProvider will handle the user state.
-      } catch (error) {
-        console.error('Google Redirect Error:', error);
-        const firebaseError = error as FirebaseError;
-        toast({
-          title: 'Falha no Login com Google',
-          description: firebaseError.message || 'Não foi possível completar o login. Tente novamente.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsCheckingRedirect(false); // Stop showing the main loader
-      }
-    };
-    checkRedirect();
-  }, [toast]);
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +62,8 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       // This will redirect the user to Google's sign-in page.
-      // The user will be redirected back to this page after signing in.
+      // After sign-in, the user will be redirected back, and the
+      // onAuthStateChanged listener in AuthProvider will handle the user state.
       await signInWithGoogleRedirect();
     } catch (error) {
       console.error('Google Login Redirect Error:', error);
@@ -98,20 +73,11 @@ export default function LoginPage() {
         description: firebaseError.message || 'Não foi possível iniciar o login com o Google. Tente novamente.',
         variant: 'destructive',
       });
-      setGoogleLoading(false);
+      setGoogleLoading(false); // Set loading to false only if an error occurs here
     }
   };
   
-  const isAnyLoading = loading || googleLoading || isCheckingRedirect;
-
-  if (isCheckingRedirect) {
-     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">Verificando autenticação...</p>
-      </div>
-    );
-  }
+  const isAnyLoading = loading || googleLoading || authLoading;
 
   return (
     <div className="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
