@@ -39,14 +39,12 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signInWithEmail, signInWithGoogle } = useAuth();
   const { toast } = useToast();
-  // We don't need the router here anymore, AppLayout handles redirection on auth state change.
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await signInWithEmail(email, password);
-      // No need to push, AppLayout will detect user and redirect.
     } catch (error) {
       console.error('Login Error:', error);
       toast({
@@ -54,7 +52,7 @@ export default function LoginPage() {
         description: 'Verifique seu e-mail e senha e tente novamente.',
         variant: 'destructive',
       });
-      setLoading(false); // Reset loading state on error
+      setLoading(false); 
     }
   };
 
@@ -62,13 +60,11 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // No need to push, AppLayout will detect user and redirect.
-      // The loading state will be handled by the redirect and component unmount.
     } catch (error) {
       console.error('Google Login Error:', error);
       const firebaseError = error as FirebaseError;
       let description = 'Não foi possível fazer o login com o Google. Tente novamente.';
-      // This is the crucial part: handling specific popup errors
+      
       if (firebaseError.code === 'auth/popup-closed-by-user') {
         description = 'A janela de login foi fechada antes da conclusão. Por favor, tente novamente.';
       } else if (firebaseError.code === 'auth/popup-blocked-by-browser') {
@@ -80,7 +76,6 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-      // This is the crucial fix: ensure loading state is always reset on any error.
       setGoogleLoading(false); 
     }
   };

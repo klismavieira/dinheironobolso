@@ -21,9 +21,10 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Set persistence to local FIRST. This is the crucial fix for pop-up authentication
-// in different browser contexts (e.g., "Open in New Window").
-// This operation must complete before any other auth operation is initiated.
+// This is the crucial fix:
+// Set persistence to local FIRST. This must complete before any other auth
+// operation is initiated to ensure session state is correctly handled
+// across different browser contexts (e.g., pop-ups, iframes).
 setPersistence(auth, browserLocalPersistence).catch((error) => {
     console.error("Firebase Auth persistence error:", error);
 });
