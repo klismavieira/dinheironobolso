@@ -5,9 +5,14 @@ import {
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
   signInWithPopup, 
-  signOut
+  signOut,
+  setPersistence,
+  browserLocalPersistence
 } from "firebase/auth";
 import { auth } from './firebase';
+
+// Set persistence to local to allow for pop-up authentication in different browser contexts
+setPersistence(auth, browserLocalPersistence);
 
 const googleProvider = new GoogleAuthProvider();
 

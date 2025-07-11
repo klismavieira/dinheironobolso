@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import type { FirebaseError } from 'firebase/app';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -64,10 +65,17 @@ export default function LoginPage() {
       router.push('/');
     } catch (error) {
       console.error('Google Login Error:', error);
+      const firebaseError = error as FirebaseError;
+      let description = 'Não foi possível fazer o login com o Google. Tente novamente.';
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        description = 'A janela de login foi fechada antes da conclusão. Por favor, tente novamente.';
+      } else if (firebaseError.code === 'auth/popup-blocked-by-browser') {
+        description = 'A janela de login foi bloqueada pelo navegador. Por favor, habilite os pop-ups e tente novamente.';
+      }
+      
       toast({
         title: 'Falha no Login com Google',
-        description:
-          'Não foi possível fazer o login com o Google. Tente novamente.',
+        description,
         variant: 'destructive',
       });
       setLoading(false);
@@ -110,7 +118,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.g.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Sua senha"
                 disabled={loading}
               />
