@@ -56,8 +56,6 @@ export default function LoginPage() {
         variant: 'destructive',
       });
       setLoading(false); // Reset loading state on error
-    } finally {
-      // setLoading(false) is now in the catch block
     }
   };
 
