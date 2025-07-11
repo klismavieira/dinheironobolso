@@ -60,6 +60,8 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
+      // On success, the AuthProvider's onAuthStateChanged listener will handle navigation.
+      // We don't need to explicitly set googleLoading to false here.
     } catch (error) {
       console.error('Google Login Error:', error);
       const firebaseError = error as FirebaseError;
@@ -76,7 +78,7 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-      setGoogleLoading(false); 
+      setGoogleLoading(false); // This is crucial to re-enable the button on any error
     }
   };
   
