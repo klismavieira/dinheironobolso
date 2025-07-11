@@ -5,6 +5,8 @@ import {
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
 } from "firebase/auth";
 import { auth } from './firebase';
@@ -16,11 +18,12 @@ export const signInWithEmail = (email: string, password: string) => {
 };
 
 export const signInWithGoogle = () => {
-  return signInWithPopup(auth, googleProvider);
+  // Use signInWithRedirect for environments where popups are blocked (like iframes)
+  return signInWithRedirect(auth, googleProvider);
 };
 
 export const signOutUser = () => {
   return signOut(auth);
 };
 
-export { auth };
+export { auth, getRedirectResult };

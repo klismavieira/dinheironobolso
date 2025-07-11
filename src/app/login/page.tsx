@@ -59,29 +59,23 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
+    setGoogleLoading(true); // Show loader immediately
     try {
       await signInWithGoogle();
-      // On success, AuthProvider will handle navigation
+      // The page will redirect, so no need to set loading to false here
     } catch (error) {
       const firebaseError = error as FirebaseError;
       console.error('Google Login Error:', firebaseError.code, firebaseError.message);
-      let description = 'Não foi possível fazer o login com o Google. Tente novamente.';
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
-        description = 'A janela de login foi fechada antes da conclusão. Por favor, tente novamente.';
-      } else if (firebaseError.code === 'auth/popup-blocked') {
-        description = 'O pop-up de login foi bloqueado pelo seu navegador. Por favor, habilite os pop-ups para este site e tente novamente.';
-      }
       toast({
         title: 'Falha no Login com Google',
-        description,
+        description: 'Não foi possível iniciar o login com o Google. Tente novamente.',
         variant: 'destructive',
       });
-    } finally {
-      setGoogleLoading(false);
+      setGoogleLoading(false); // Only set to false if an error occurs *before* redirect
     }
   };
   
+  // authLoading will be true when AuthProvider is busy (e.g., after redirect)
   const isAnyLoading = loading || googleLoading || authLoading;
 
   return (
@@ -92,7 +86,10 @@ export default function LoginPage() {
             Acesse sua conta
           </CardTitle>
           <CardDescription>
-            Entre com seus dados para continuar
+            {authLoading 
+              ? 'Finalizando autenticação...' 
+              : 'Entre com seus dados para continuar'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -126,7 +123,7 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isAnyLoading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {(loading || authLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Entrar
             </Button>
           </form>
@@ -141,7 +138,7 @@ export default function LoginPage() {
             onClick={handleGoogleLogin}
             disabled={isAnyLoading}
           >
-            {googleLoading ? (
+            {(googleLoading || authLoading) ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <GoogleIcon className="mr-2 h-4 w-4" />
