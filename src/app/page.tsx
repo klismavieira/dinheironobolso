@@ -246,7 +246,7 @@ export default function Home() {
         if (isFixed) {
           const numInstallments = installments || 12;
           const seriesId = uuidv4();
-          const batchData: Omit<Transaction, 'id'>[] = [];
+          const batchData: Omit<Transaction, 'id'| 'userId'>[] = [];
           for (let i = 0; i < numInstallments; i++) {
             batchData.push({
               ...baseTransactionData,

@@ -50,27 +50,21 @@ const getCurrentUserId = (): string => {
   return user.uid;
 }
 
+// Fetches ALL transactions for the user and then filters by date on the client.
+// This avoids the need for a composite index in Firestore.
 export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
-  const userId = getCurrentUserId();
-  const startTimestamp = Timestamp.fromDate(startDate);
-  const endTimestamp = Timestamp.fromDate(endDate);
-
-  const q = query(
-    collection(db, TRANSACTIONS_COLLECTION),
-    where('userId', '==', userId),
-    where('date', '>=', startTimestamp),
-    where('date', '<=', endTimestamp)
-  );
-
   try {
-    const querySnapshot = await getDocs(q);
-    const transactions = querySnapshot.docs
-      .map(fromFirestore)
-      .filter((t): t is Transaction => t !== null); // Filter out any invalid documents
+    const allTransactions = await getAllTransactions();
+    const startTime = startDate.getTime();
+    const endTime = endDate.getTime();
+    
+    const filtered = allTransactions.filter(t => {
+      const transactionTime = t.date.getTime();
+      return transactionTime >= startTime && transactionTime <= endTime;
+    });
 
-    // Sort on client to avoid needing a composite index
-    transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
-    return transactions;
+    return filtered;
+
   } catch (error) {
     console.error("Firebase Error: Failed to get transactions for period.", error);
     if (error instanceof Error) {
@@ -79,6 +73,7 @@ export const getTransactionsForPeriod = async (startDate: Date, endDate: Date): 
     throw new Error("Não foi possível buscar as transações. Verifique sua conexão ou permissões.");
   }
 };
+
 
 export const getAllTransactions = async (): Promise<Transaction[]> => {
   const userId = getCurrentUserId();
@@ -117,7 +112,7 @@ export const getTotalTransactionCount = async (): Promise<number> => {
   }
 };
 
-export const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'seriesId' | 'installment'>): Promise<void> => {
+export const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'seriesId' | 'installment' | 'userId'>): Promise<void> => {
   const userId = getCurrentUserId();
   try {
     await addDoc(collection(db, TRANSACTIONS_COLLECTION), { ...transactionData, userId });
@@ -130,7 +125,7 @@ export const addTransaction = async (transactionData: Omit<Transaction, 'id' | '
   }
 };
 
-export const addTransactionsBatch = async (transactions: Omit<Transaction, 'id'>[]): Promise<void> => {
+export const addTransactionsBatch = async (transactions: Omit<Transaction, 'id' | 'userId'>[]): Promise<void> => {
   const userId = getCurrentUserId();
   const batch = writeBatch(db);
   transactions.forEach(transactionData => {
@@ -253,21 +248,17 @@ export const deleteFutureTransactions = async (seriesId: string, fromDate: Date)
 };
 
 export const getTransactionsBeforeDate = async (endDate: Date): Promise<Transaction[]> => {
-  const userId = getCurrentUserId();
-  const endTimestamp = Timestamp.fromDate(endDate);
+    try {
+    const allTransactions = await getAllTransactions();
+    const endTime = endDate.getTime();
+    
+    const filtered = allTransactions.filter(t => {
+      const transactionTime = t.date.getTime();
+      return transactionTime < endTime;
+    });
 
-  const q = query(
-    collection(db, TRANSACTIONS_COLLECTION),
-    where('userId', '==', userId),
-    where('date', '<', endTimestamp)
-  );
+    return filtered;
 
-  try {
-    const querySnapshot = await getDocs(q);
-    const transactions = querySnapshot.docs
-      .map(fromFirestore)
-      .filter((t): t is Transaction => t !== null);
-    return transactions;
   } catch (error) {
     console.error("Firebase Error: Failed to get transactions before date.", error);
     if (error instanceof Error) {
