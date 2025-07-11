@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/layout/header';
@@ -16,27 +16,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isPublicRoute = publicRoutes.includes(pathname);
 
-  if (loading) {
+  useEffect(() => {
+    if (loading) return; // Don't do anything while loading
+
+    if (!user && !isPublicRoute) {
+      router.push('/login');
+    }
+
+    if (user && isPublicRoute) {
+      router.push('/');
+    }
+  }, [user, loading, isPublicRoute, router, pathname]);
+
+  if (loading || (!user && !isPublicRoute) || (user && isPublicRoute)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user && !isPublicRoute) {
-    router.push('/login');
-    return (
-       <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (user && isPublicRoute) {
-    router.push('/');
-     return (
-       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
