@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -81,7 +80,8 @@ export default function LoginPage() {
         description,
         variant: 'destructive',
       });
-      setGoogleLoading(false); // This is the crucial fix: ensure loading state is always reset on error.
+      // This is the crucial fix: ensure loading state is always reset on any error.
+      setGoogleLoading(false); 
     }
   };
   

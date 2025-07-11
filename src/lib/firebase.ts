@@ -1,8 +1,7 @@
-
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 
 // Your web app's Firebase configuration
@@ -21,8 +20,15 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// Set persistence to local FIRST. This is the crucial fix for pop-up authentication
+// in different browser contexts (e.g., "Open in New Window").
+// This operation must complete before any other auth operation is initiated.
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error("Firebase Auth persistence error:", error);
+});
 
-// Enable offline persistence
+
+// Enable offline persistence for Firestore
 enableIndexedDbPersistence(db)
   .catch((err) => {
     if (err.code == 'failed-precondition') {
