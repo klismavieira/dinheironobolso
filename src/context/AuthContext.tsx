@@ -3,7 +3,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth, signInWithEmail, signInWithGoogle, signOutUser, getRedirectResult } from '@/lib/auth';
+import { auth } from '@/lib/firebase';
+import { signInWithEmail, signInWithGoogle, signOutUser } from '@/lib/auth';
 
 
 interface AuthContextType {
@@ -21,28 +22,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for redirect result when the app loads
-    getRedirectResult(auth)
-      .then((result) => {
-        // If we get a result, the user has just signed in.
-        // onAuthStateChanged will handle setting the user.
-        // We can just log that it was successful.
-        if (result) {
-          console.log("Redirect login successful");
-        }
-      })
-      .catch((error) => {
-        console.error("Error getting redirect result:", error);
-      })
-      .finally(() => {
-        // The onAuthStateChanged listener will handle the user state.
-        // This is our primary way of knowing if the user is logged in.
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          setUser(user);
-          setLoading(false);
-        });
-        return () => unsubscribe();
-      });
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const value = {

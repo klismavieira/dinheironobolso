@@ -1,7 +1,7 @@
 
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence, setDoc, doc } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 
@@ -16,29 +16,25 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-// Avoid re-initializing the app on hot reloads
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// Set persistence to local storage to help with auth in iframe/popup environments.
+// This is the crucial step to ensure the session is shared correctly.
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error("Firebase Auth persistence error:", error.code, error.message);
+});
 
 // Enable offline persistence for Firestore
 enableIndexedDbPersistence(db)
   .catch((err) => {
     if (err.code == 'failed-precondition') {
-      // Multiple tabs open, persistence can only be enabled
-      // in one tab at a time.
-      console.warn("Firestore persistence failed: multiple tabs open. App will still work online.");
+      console.warn("Firestore persistence failed: multiple tabs open.");
     } else if (err.code == 'unimplemented') {
-      // The current browser does not support all of the
-      // features required to enable persistence
-      console.warn("Firestore persistence not available in this browser. App will still work online.");
+      console.warn("Firestore persistence not available in this browser.");
     }
   });
-
-// Set persistence to local storage to help with auth in iframe environments
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error("Firebase Auth persistence error:", error.code, error.message);
-});
 
 
 export { db, auth };
