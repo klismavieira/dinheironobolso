@@ -2,7 +2,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 
 
 // Your web app's Firebase configuration
@@ -20,15 +20,6 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
-
-// This is the crucial fix:
-// Set persistence to local FIRST. This must complete before any other auth
-// operation is initiated to ensure session state is correctly handled
-// across different browser contexts (e.g., pop-ups, iframes).
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.error("Firebase Auth persistence error:", error);
-});
-
 
 // Enable offline persistence for Firestore
 enableIndexedDbPersistence(db)

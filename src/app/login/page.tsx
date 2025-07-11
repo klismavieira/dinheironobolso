@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { FirebaseError } from 'firebase/app';
+import { getRedirectResult } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -37,14 +39,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signInWithEmail, signInWithGoogle } = useAuth();
+  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
+  const { signInWithEmail, signInWithGoogleRedirect, user } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // This effect runs on page load to check if the user is returning from a Google login redirect.
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        // If result is null, it means the user just landed on the page, not from a redirect.
+        // If result is not null, the onAuthStateChanged listener in AuthProvider will handle the user state.
+      } catch (error) {
+        console.error('Google Redirect Error:', error);
+        const firebaseError = error as FirebaseError;
+        toast({
+          title: 'Falha no Login com Google',
+          description: firebaseError.message || 'Não foi possível completar o login. Tente novamente.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsCheckingRedirect(false); // Stop showing the main loader
+      }
+    };
+    checkRedirect();
+  }, [toast]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await signInWithEmail(email, password);
+      // On success, AuthProvider will handle navigation
     } catch (error) {
       console.error('Login Error:', error);
       toast({
@@ -52,37 +79,39 @@ export default function LoginPage() {
         description: 'Verifique seu e-mail e senha e tente novamente.',
         variant: 'destructive',
       });
-      setLoading(false); 
+    } finally {
+        setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
-      // On success, the AuthProvider's onAuthStateChanged listener will handle navigation.
-      // We don't need to explicitly set googleLoading to false here.
+      // This will redirect the user to Google's sign-in page.
+      // The user will be redirected back to this page after signing in.
+      await signInWithGoogleRedirect();
     } catch (error) {
-      console.error('Google Login Error:', error);
+      console.error('Google Login Redirect Error:', error);
       const firebaseError = error as FirebaseError;
-      let description = 'Não foi possível fazer o login com o Google. Tente novamente.';
-      
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
-        description = 'A janela de login foi fechada antes da conclusão. Por favor, tente novamente.';
-      } else if (firebaseError.code === 'auth/popup-blocked-by-browser') {
-        description = 'A janela de login foi bloqueada pelo navegador. Por favor, habilite os pop-ups e tente novamente.';
-      }
-      
       toast({
         title: 'Falha no Login com Google',
-        description,
+        description: firebaseError.message || 'Não foi possível iniciar o login com o Google. Tente novamente.',
         variant: 'destructive',
       });
-      setGoogleLoading(false); // This is crucial to re-enable the button on any error
+      setGoogleLoading(false);
     }
   };
   
-  const isAnyLoading = loading || googleLoading;
+  const isAnyLoading = loading || googleLoading || isCheckingRedirect;
+
+  if (isCheckingRedirect) {
+     return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="ml-4 text-muted-foreground">Verificando autenticação...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
