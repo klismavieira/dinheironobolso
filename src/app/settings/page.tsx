@@ -9,7 +9,7 @@ import {
   updateCategory,
   deleteCategory,
   type Categories,
-} from '@/lib/firestoreService';
+} from '@/lib/services/categoryService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';

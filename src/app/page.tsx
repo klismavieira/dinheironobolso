@@ -11,11 +11,13 @@ import {
   deleteTransaction,
   deleteFutureTransactions,
   addTransactionsBatch,
-  onCategoriesUpdate,
-  type Categories,
   getTransactionsForPeriod,
   getTransactionsBeforeDate,
-} from '@/lib/firestoreService';
+} from '@/lib/services/transactionService';
+import {
+  onCategoriesUpdate,
+  type Categories,
+} from '@/lib/services/categoryService';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import { FinancialSummary } from '@/components/financials/financial-summary';
 import { TransactionList } from '@/components/financials/transaction-list';

@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { onNotesUpdate, addNote, updateNote, deleteNote } from '@/lib/firestoreService';
+import { onNotesUpdate, addNote, updateNote, deleteNote } from '@/lib/services/noteService';
 import type { Note } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';

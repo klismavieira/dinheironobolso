@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { getTransactionsForPeriod, getTransactionsBeforeDate } from '@/lib/firestoreService';
+import { getTransactionsForPeriod, getTransactionsBeforeDate } from '@/lib/services/transactionService';
 import {
   startOfMonth,
   endOfMonth,

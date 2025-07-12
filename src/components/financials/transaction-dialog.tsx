@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { Transaction } from '@/lib/types';
 import { useEffect, useState } from 'react';
-import { addCategory, type Categories } from '@/lib/firestoreService';
+import { addCategory, type Categories } from '@/lib/services/categoryService';
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle } from 'lucide-react';
 
