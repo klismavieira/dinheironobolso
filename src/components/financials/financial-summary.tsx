@@ -28,8 +28,9 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     .reduce((sum, t) => sum + t.amount, 0);
 
   const balance = previousBalance + totalIncome - totalExpenses;
-  const paidBalance = paidIncome - paidExpenses;
-  const currentCashBalance = previousBalance + paidIncome - paidExpenses;
+  const cashInHand = previousBalance + paidIncome;
+  const paidBalance = cashInHand - paidExpenses;
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -99,8 +100,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
                 <p className="text-xs font-medium text-muted-foreground">Saldo em Caixa</p>
                 <Wallet className="h-4 w-4 text-accent" />
               </div>
-              <div className={`text-lg font-bold ${currentCashBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
-                {formatCurrency(currentCashBalance)}
+              <div className={`text-lg font-bold ${cashInHand >= 0 ? 'text-accent' : 'text-destructive'}`}>
+                {formatCurrency(cashInHand)}
               </div>
             </CardContent>
           </Card>
