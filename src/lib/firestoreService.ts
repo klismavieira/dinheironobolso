@@ -430,8 +430,7 @@ export const onNotesUpdate = (
       const userId = getCurrentUserId();
       const q = query(
         collection(db, NOTES_COLLECTION),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
       );
   
       const unsubscribe = onSnapshot(
@@ -440,6 +439,10 @@ export const onNotesUpdate = (
           const notes = querySnapshot.docs
             .map(noteFromFirestore)
             .filter((n): n is Note => n !== null);
+          
+          // Sort client-side to avoid composite index
+          notes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
           onUpdate(notes);
         },
         (error) => {
@@ -496,3 +499,5 @@ export const deleteNote = async (id: string): Promise<void> => {
       throw new Error("Não foi possível excluir a nota.");
     }
 };
+
+    
