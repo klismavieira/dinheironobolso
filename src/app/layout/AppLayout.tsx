@@ -45,6 +45,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
         {children}
       </main>
+      <footer className="py-4 text-center text-sm text-muted-foreground">
+        Desenvolvido por Klisma Vieira
+      </footer>
     </div>
   );
 }
