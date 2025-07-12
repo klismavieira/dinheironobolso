@@ -50,12 +50,18 @@ export default function LoginPage() {
   const { signInWithEmail, signInWithGoogle, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
     };
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsStandalone(true);
+    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
@@ -76,6 +82,7 @@ export default function LoginPage() {
         console.log('User dismissed the install prompt');
       }
       setInstallPrompt(null);
+      setIsStandalone(true);
     });
   };
 
@@ -190,7 +197,7 @@ export default function LoginPage() {
             Entrar com Google
           </Button>
         </CardContent>
-        {installPrompt && (
+        {installPrompt && !isStandalone && (
           <CardFooter className="flex-col gap-2">
             <Separator />
             <Button variant="secondary" className="w-full mt-4" onClick={handleInstallClick}>
