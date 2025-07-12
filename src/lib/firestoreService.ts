@@ -17,17 +17,19 @@ import {
   writeBatch,
   getDocs,
   runTransaction,
+  orderBy,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import type { Transaction } from './types';
+import type { Transaction, Note } from './types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from './constants';
 
 const TRANSACTIONS_COLLECTION = 'transactions';
 const CATEGORIES_COLLECTION = 'categories';
+const NOTES_COLLECTION = 'notes';
 
 
 // Helper to convert Firestore data to Transaction type. Returns null if data is invalid.
-const fromFirestore = (docSnapshot: any): Transaction | null => {
+const transactionFromFirestore = (docSnapshot: any): Transaction | null => {
   const data = docSnapshot.data();
   // Add robust check for data and date field. Malformed data can break the app.
   if (!data || !data.date || typeof data.date.toDate !== 'function') {
@@ -43,6 +45,22 @@ const fromFirestore = (docSnapshot: any): Transaction | null => {
     date: (data.date as Timestamp).toDate(),
   } as Transaction;
 };
+
+const noteFromFirestore = (docSnapshot: any): Note | null => {
+    const data = docSnapshot.data();
+    if (!data || !data.createdAt || typeof data.createdAt.toDate !== 'function') {
+      console.warn(
+        `Skipping invalid note document (ID: ${docSnapshot.id}). It's missing a valid 'createdAt' field.`,
+        data
+      );
+      return null;
+    }
+    return {
+      id: docSnapshot.id,
+      ...data,
+      createdAt: (data.createdAt as Timestamp).toDate(),
+    } as Note;
+  };
 
 // --- Helper to get current user ID ---
 const getCurrentUserId = (): string => {
@@ -85,7 +103,7 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
   try {
     const querySnapshot = await getDocs(q);
     const transactions = querySnapshot.docs
-      .map(fromFirestore)
+      .map(transactionFromFirestore)
       .filter((t): t is Transaction => t !== null); // Filter out any invalid documents
       
     // Sort on client to avoid needing a composite index
@@ -180,7 +198,7 @@ export const updateFutureTransactions = async (
     const fromTime = fromDate.getTime();
 
     querySnapshot.forEach(doc => {
-      const transaction = fromFirestore(doc);
+      const transaction = transactionFromFirestore(doc);
       if (transaction) {
         const transactionTime = transaction.date.getTime();
 
@@ -230,7 +248,7 @@ export const deleteFutureTransactions = async (seriesId: string, fromDate: Date)
     const fromTime = fromDate.getTime();
 
     querySnapshot.forEach(doc => {
-      const transaction = fromFirestore(doc);
+      const transaction = transactionFromFirestore(doc);
       if (transaction) {
         const transactionTime = transaction.date.getTime();
 
@@ -401,4 +419,80 @@ export const deleteCategory = async (type: 'income' | 'expense', categoryName: s
     }
     throw new Error("Não foi possível excluir a categoria. Verifique sua conexão ou permissões.");
   }
+};
+
+// Notes Service
+export const onNotesUpdate = (
+    onUpdate: (notes: Note[]) => void,
+    onError: (error: Error) => void
+  ) => {
+    try {
+      const userId = getCurrentUserId();
+      const q = query(
+        collection(db, NOTES_COLLECTION),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+  
+      const unsubscribe = onSnapshot(
+        q,
+        (querySnapshot) => {
+          const notes = querySnapshot.docs
+            .map(noteFromFirestore)
+            .filter((n): n is Note => n !== null);
+          onUpdate(notes);
+        },
+        (error) => {
+          console.error("Error listening to note updates:", error);
+          onError(new Error(`Não foi possível buscar as notas: ${error.message}`));
+        }
+      );
+  
+      return unsubscribe;
+    } catch (error) {
+      console.warn("Could not attach notes listener: user not authenticated.");
+      return () => {};
+    }
+};
+
+export const addNote = async (noteData: Omit<Note, 'id' | 'userId' | 'createdAt'>): Promise<void> => {
+    const userId = getCurrentUserId();
+    try {
+      await addDoc(collection(db, NOTES_COLLECTION), {
+        ...noteData,
+        userId,
+        createdAt: Timestamp.now(),
+      });
+    } catch (error) {
+      console.error("Firebase Error: Failed to add note.", error);
+      if (error instanceof Error) {
+        throw new Error(`Não foi possível adicionar a nota: ${error.message}`);
+      }
+      throw new Error("Não foi possível adicionar a nota.");
+    }
+};
+  
+export const updateNote = async (id: string, noteData: Partial<Omit<Note, 'id' | 'userId' | 'createdAt'>>): Promise<void> => {
+    const noteRef = doc(db, NOTES_COLLECTION, id);
+    try {
+      await updateDoc(noteRef, noteData);
+    } catch (error) {
+      console.error("Firebase Error: Failed to update note.", error);
+      if (error instanceof Error) {
+        throw new Error(`Não foi possível atualizar a nota: ${error.message}`);
+      }
+      throw new Error("Não foi possível atualizar a nota.");
+    }
+};
+
+export const deleteNote = async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, NOTES_COLLECTION, id));
+    } catch (error) {
+      console.error("Firebase Error: Failed to delete note.", error);
+      if (error instanceof Error) {
+        throw new Error(`Não foi possível excluir a nota: ${error.message}`);
+      }
+      throw new Error("Não foi possível excluir a nota.");
+    }
 };

@@ -3,7 +3,7 @@
 
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
-import { Home, LineChart, LogOut, Settings } from 'lucide-react';
+import { Home, LineChart, LogOut, Settings, Notebook } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -52,6 +52,12 @@ export function Header() {
               <Link href="/dashboard">
                 <LineChart className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Dashboard</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/notes">
+                <Notebook className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Notas</span>
               </Link>
             </Button>
             <Button variant="ghost" asChild>

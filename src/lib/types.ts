@@ -10,3 +10,11 @@ export type Transaction = {
   seriesId?: string;
   installment?: string;
 };
+
+export type Note = {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+};
