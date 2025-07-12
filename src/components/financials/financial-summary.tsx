@@ -97,7 +97,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <Card className="shadow-none border-dashed">
             <CardContent className="p-3">
               <div className="flex flex-row items-center justify-between space-y-0 mb-1">
-                <p className="text-xs font-medium text-muted-foreground">Receitas Realizadas</p>
+                <p className="text-xs font-medium text-muted-foreground">Receita atual</p>
                 <Coins className="h-4 w-4 text-accent" />
               </div>
               <div className={`text-lg font-bold ${realizedIncome >= 0 ? 'text-accent' : 'text-destructive'}`}>
