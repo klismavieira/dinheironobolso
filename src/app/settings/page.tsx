@@ -258,8 +258,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="general" className="w-full">
         <TabsList>
           <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="income">Receitas</TabsTrigger>
-          <TabsTrigger value="expenses">Despesas</TabsTrigger>
+          <TabsTrigger value="categories">Categorias</TabsTrigger>
         </TabsList>
         <TabsContent value="general">
           <Card>
@@ -280,11 +279,11 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="income">
-          {renderCategoryList('Categorias de Receita', 'income', INCOME_CATEGORIES, userIncomeCategories)}
-        </TabsContent>
-        <TabsContent value="expenses">
-          {renderCategoryList('Categorias de Despesa', 'expense', EXPENSE_CATEGORIES, userExpenseCategories)}
+        <TabsContent value="categories">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {renderCategoryList('Categorias de Receita', 'income', INCOME_CATEGORIES, userIncomeCategories)}
+                {renderCategoryList('Categorias de Despesa', 'expense', EXPENSE_CATEGORIES, userExpenseCategories)}
+            </div>
         </TabsContent>
       </Tabs>
 
