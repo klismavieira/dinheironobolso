@@ -4,6 +4,7 @@
 import type { Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Scale, CheckCircle2, Coins, Wallet } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface FinancialSummaryProps {
   transactions: Transaction[];
@@ -11,7 +12,7 @@ interface FinancialSummaryProps {
 }
 
 export function FinancialSummary({ transactions, previousBalance }: FinancialSummaryProps) {
-  // Totals for the "Previsão do Período" section
+  // --- Totals for "Previsão do Período" section ---
   const totalIncome = transactions
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -20,9 +21,9 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const balance = previousBalance + totalIncome - totalExpenses;
+  const predictedBalance = previousBalance + totalIncome - totalExpenses;
 
-  // Totals for the "Resumo Realizado" section (based on paid status)
+  // --- Totals for "Resumo Realizado" section (based on paid status) ---
   const paidIncome = transactions
     .filter((t) => t.type === 'income' && t.isPaid)
     .reduce((sum, t) => sum + t.amount, 0);
@@ -30,8 +31,11 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
   const paidExpenses = transactions
     .filter((t) => t.type === 'expense' && t.isPaid)
     .reduce((sum, t) => sum + t.amount, 0);
-  
+
+  // This is the total money that has actually entered your account this period
   const currentRevenue = previousBalance + paidIncome;
+
+  // This is the final cash in hand after paid expenses are deducted
   const cashInHand = currentRevenue - paidExpenses;
 
   const formatCurrency = (amount: number) => {
@@ -45,7 +49,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     <div className="flex flex-col gap-8">
       <div>
         <h2 className="text-xl font-semibold mb-4 text-foreground">Previsão do Período</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Receita Prevista</CardTitle>
@@ -70,8 +74,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <Scale className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-lg md:text-xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
-                {formatCurrency(balance)}
+              <div className={cn('text-lg md:text-xl font-bold', predictedBalance >= 0 ? 'text-accent' : 'text-destructive')}>
+                {formatCurrency(predictedBalance)}
               </div>
             </CardContent>
           </Card>
@@ -80,7 +84,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
 
       <div>
         <h2 className="text-xl font-semibold mb-4 text-foreground">Resumo Realizado</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Receita atual</CardTitle>
@@ -107,7 +111,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
                 <Wallet className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className={`text-lg md:text-xl font-bold ${cashInHand >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                <div className={cn('text-lg md:text-xl font-bold', cashInHand >= 0 ? 'text-primary' : 'text-destructive')}>
                   {formatCurrency(cashInHand)}
                 </div>
               </CardContent>
