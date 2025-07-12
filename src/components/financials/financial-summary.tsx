@@ -3,7 +3,7 @@
 
 import type { Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Scale, CheckCircle2, Banknote } from 'lucide-react';
+import { TrendingUp, TrendingDown, Scale, CheckCircle2, Banknote, Wallet } from 'lucide-react';
 
 interface FinancialSummaryProps {
   transactions: Transaction[];
@@ -29,6 +29,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
 
   const balance = previousBalance + totalIncome - totalExpenses;
   const paidBalance = paidIncome - paidExpenses;
+  const currentCashBalance = previousBalance + paidIncome - paidExpenses;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -95,10 +96,12 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <Card className="shadow-none border-dashed">
             <CardContent className="p-3">
               <div className="flex flex-row items-center justify-between space-y-0 mb-1">
-                <p className="text-xs font-medium text-muted-foreground">Receitas Recebidas</p>
-                <CheckCircle2 className="h-4 w-4 text-accent" />
+                <p className="text-xs font-medium text-muted-foreground">Saldo em Caixa</p>
+                <Wallet className="h-4 w-4 text-accent" />
               </div>
-              <div className="text-lg font-bold">{formatCurrency(paidIncome)}</div>
+              <div className={`text-lg font-bold ${currentCashBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+                {formatCurrency(currentCashBalance)}
+              </div>
             </CardContent>
           </Card>
           <Card className="shadow-none border-dashed">
@@ -113,7 +116,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <Card className="shadow-none border-dashed">
             <CardContent className="p-3">
               <div className="flex flex-row items-center justify-between space-y-0 mb-1">
-                <p className="text-xs font-medium text-muted-foreground">Saldo Realizado</p>
+                <p className="text-xs font-medium text-muted-foreground">Balanço Realizado</p>
                 <Scale className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className={`text-lg font-bold ${paidBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
