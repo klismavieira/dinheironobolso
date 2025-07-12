@@ -75,18 +75,16 @@ export default function DashboardPage() {
         const monthKey = format(monthDate, 'MMM/yy', { locale: ptBR });
         const monthAggregates = monthlyData[monthKey] || { income: 0, expense: 0 };
         const monthLabel = format(monthDate, 'MMM/yy', { locale: ptBR });
-
-        runningBalance += monthAggregates.income;
+        
+        runningBalance += monthAggregates.income - monthAggregates.expense;
 
         const chartDataItem = {
           month: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1),
-          Faturamento: runningBalance,
+          Faturamento: monthAggregates.income,
           Despesa: monthAggregates.expense,
+          Saldo: runningBalance,
         };
         
-        // The balance for the next month's calculation must subtract this month's expenses
-        runningBalance -= monthAggregates.expense;
-
         return chartDataItem;
       });
 
