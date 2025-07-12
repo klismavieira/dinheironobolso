@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { getTransactionsForPeriod } from '@/lib/firestoreService';
+import { getTransactionsForPeriod, getTransactionsBeforeDate } from '@/lib/firestoreService';
 import {
   startOfMonth,
   endOfMonth,
@@ -47,7 +47,14 @@ export default function DashboardPage() {
       setAnnualLoading(true);
       const yearStart = startOfYear(new Date());
       const yearEnd = endOfYear(new Date());
+
+      // Fetch transactions for the year and balance before the year
       const transactions = await getTransactionsForPeriod(yearStart, yearEnd);
+      const previousTransactions = await getTransactionsBeforeDate(yearStart);
+      
+      let runningBalance = previousTransactions.reduce((acc, t) => {
+        return acc + (t.type === 'income' ? t.amount : -t.amount);
+      }, 0);
 
       const monthlyData: { [key: string]: { income: number; expense: number } } = {};
       transactions.forEach(t => {
@@ -63,15 +70,24 @@ export default function DashboardPage() {
       });
       
       const intervalMonths = eachMonthOfInterval({ start: yearStart, end: yearEnd });
+      
       const lineChartData: ChartData[] = intervalMonths.map(monthDate => {
         const monthKey = format(monthDate, 'MMM/yy', { locale: ptBR });
         const monthAggregates = monthlyData[monthKey] || { income: 0, expense: 0 };
         const monthLabel = format(monthDate, 'MMM/yy', { locale: ptBR });
-        return {
+
+        runningBalance += monthAggregates.income;
+
+        const chartDataItem = {
           month: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1),
-          Faturamento: monthAggregates.income,
+          Faturamento: runningBalance,
           Despesa: monthAggregates.expense,
         };
+        
+        // The balance for the next month's calculation must subtract this month's expenses
+        runningBalance -= monthAggregates.expense;
+
+        return chartDataItem;
       });
 
       setAnnualChartData(lineChartData);
