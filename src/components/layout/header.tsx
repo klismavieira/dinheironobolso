@@ -3,16 +3,24 @@
 
 import { Logo } from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
-import { Home, LineChart, LogOut, Settings, Notebook } from 'lucide-react';
+import { Home, LineChart, LogOut, Settings, Notebook, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from 'next-themes';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function Header() {
   const { signOutUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { setTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -66,6 +74,26 @@ export function Header() {
                 <span className="hidden md:inline">Configurações</span>
               </Link>
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Alterar tema</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  Claro
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  Escuro
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  Sistema
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="ghost" onClick={handleLogout}>
               <LogOut className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Sair</span>

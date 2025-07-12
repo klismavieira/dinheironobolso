@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/context/AuthContext';
 import AppLayout from './layout/AppLayout';
+import { ThemeProvider } from '@/components/layout/theme-provider';
 
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
@@ -24,12 +25,19 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={cn("font-sans antialiased", inter.variable)}>
-        <AuthProvider>
-          <AppLayout>
-            {children}
-          </AppLayout>
-        </AuthProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <AppLayout>
+              {children}
+            </AppLayout>
+          </AuthProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
