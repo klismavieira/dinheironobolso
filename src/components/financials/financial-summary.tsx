@@ -48,6 +48,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
 
   const pocketMoney = previousBalance + realizedIncomes - realizedExpenses;
 
+  const currentBalance = pocketMoney - pendingExpenses;
+
   return (
     <div className="space-y-4 mb-4">
       <div>
@@ -77,7 +79,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-accent">
+              <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(plannedIncomes)}
               </div>
             </CardContent>
@@ -90,7 +92,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-2xl font-bold text-destructive">
                 {formatCurrency(plannedExpenses)}
               </div>
             </CardContent>
@@ -129,7 +131,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
             <CardContent>
               <div className={cn(
                 "text-2xl font-bold",
-                pocketMoney < 0 ? "text-destructive" : "text-primary"
+                pocketMoney < 0 ? "text-destructive" : "text-green-600"
               )}>
                 {formatCurrency(pocketMoney)}
               </div>
@@ -145,6 +147,22 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">
                 {formatCurrency(pendingExpenses)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Saldo atual
+              </CardTitle>
+              <Scale className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={cn(
+                "text-2xl font-bold",
+                currentBalance < 0 ? "text-destructive" : "text-primary"
+              )}>
+                {formatCurrency(currentBalance)}
               </div>
             </CardContent>
           </Card>
