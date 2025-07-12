@@ -42,6 +42,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { buttonVariants } from '@/components/ui/button';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -477,7 +478,10 @@ export default function Home() {
                 <AlertDialogAction onClick={() => handleConfirmDelete('single')}>
                   Excluir apenas esta transação
                 </AlertDialogAction>
-                <AlertDialogAction onClick={() => handleConfirmDelete('future')}>
+                <AlertDialogAction
+                  className={cn(buttonVariants({ variant: "destructive" }))}
+                  onClick={() => handleConfirmDelete('future')}
+                >
                   Excluir esta e as futuras
                 </AlertDialogAction>
                 <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>
