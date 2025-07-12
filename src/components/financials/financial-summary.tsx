@@ -3,7 +3,7 @@
 
 import type { Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Scale, CheckCircle2, Banknote, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Scale, CheckCircle2, Banknote, Wallet, Coins } from 'lucide-react';
 
 interface FinancialSummaryProps {
   transactions: Transaction[];
@@ -28,8 +28,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     .reduce((sum, t) => sum + t.amount, 0);
 
   const balance = previousBalance + totalIncome - totalExpenses;
-  const cashInHand = previousBalance + paidIncome;
-  const paidBalance = cashInHand - paidExpenses;
+  const realizedIncome = previousBalance + paidIncome;
+  const cashInHand = realizedIncome - paidExpenses;
 
 
   const formatCurrency = (amount: number) => {
@@ -97,11 +97,11 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <Card className="shadow-none border-dashed">
             <CardContent className="p-3">
               <div className="flex flex-row items-center justify-between space-y-0 mb-1">
-                <p className="text-xs font-medium text-muted-foreground">Saldo em Caixa</p>
-                <Wallet className="h-4 w-4 text-accent" />
+                <p className="text-xs font-medium text-muted-foreground">Receitas Realizadas</p>
+                <Coins className="h-4 w-4 text-accent" />
               </div>
-              <div className={`text-lg font-bold ${cashInHand >= 0 ? 'text-accent' : 'text-destructive'}`}>
-                {formatCurrency(cashInHand)}
+              <div className={`text-lg font-bold ${realizedIncome >= 0 ? 'text-accent' : 'text-destructive'}`}>
+                {formatCurrency(realizedIncome)}
               </div>
             </CardContent>
           </Card>
@@ -117,11 +117,11 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <Card className="shadow-none border-dashed">
             <CardContent className="p-3">
               <div className="flex flex-row items-center justify-between space-y-0 mb-1">
-                <p className="text-xs font-medium text-muted-foreground">Balanço Realizado</p>
-                <Scale className="h-4 w-4 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">Saldo em Caixa</p>
+                <Wallet className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className={`text-lg font-bold ${paidBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
-                {formatCurrency(paidBalance)}
+              <div className={`text-lg font-bold ${cashInHand >= 0 ? 'text-accent' : 'text-destructive'}`}>
+                {formatCurrency(cashInHand)}
               </div>
             </CardContent>
           </Card>
