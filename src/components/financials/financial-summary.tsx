@@ -30,26 +30,10 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     .filter((t) => t.type === 'expense')
     .reduce((acc, t) => acc + t.amount, 0);
   
-  const paidIncomes = transactions
-    .filter((t) => t.type === 'income' && t.isPaid)
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const paidExpenses = transactions
-    .filter((t) => t.type === 'expense' && t.isPaid)
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const currentBalance = paidIncomes - paidExpenses;
-  
   const plannedBalance = previousBalance + plannedIncomes - plannedExpenses;
   
   return (
     <div className="space-y-4 mb-4">
-       <div>
-        <h3 className="text-lg font-medium mb-4">Movimentação atual</h3>
-      </div>
-      
-      <Separator />
-
       <div>
         <h3 className="text-lg font-medium mb-4">Previsão financeira</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -112,6 +96,12 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      <Separator />
+
+      <div>
+        <h3 className="text-lg font-medium mb-4">Movimentação atual</h3>
       </div>
     </div>
   );
