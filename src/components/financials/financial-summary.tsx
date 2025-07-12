@@ -3,7 +3,7 @@
 
 import type { Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Scale, CheckCircle2, Banknote, Wallet, Coins } from 'lucide-react';
+import { TrendingUp, TrendingDown, Scale, CheckCircle2, Coins, Wallet } from 'lucide-react';
 
 interface FinancialSummaryProps {
   transactions: Transaction[];
@@ -31,7 +31,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     .filter((t) => t.type === 'expense' && t.isPaid)
     .reduce((sum, t) => sum + t.amount, 0);
   
-  const cashInHand = previousBalance + paidIncome - paidExpenses;
+  const currentRevenue = previousBalance + paidIncome;
+  const cashInHand = currentRevenue - paidExpenses;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -82,23 +83,12 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Saldo Anterior</CardTitle>
-                <Banknote className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-lg md:text-xl font-bold ${previousBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  {formatCurrency(previousBalance)}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Receitas Recebidas</CardTitle>
+                <CardTitle className="text-sm font-medium">Receita atual</CardTitle>
                 <Coins className="h-5 w-5 text-accent" />
               </CardHeader>
               <CardContent>
                 <div className="text-lg md:text-xl font-bold text-accent">
-                  {formatCurrency(paidIncome)}
+                  {formatCurrency(currentRevenue)}
                 </div>
               </CardContent>
             </Card>
@@ -108,7 +98,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
                 <CheckCircle2 className="h-5 w-5 text-destructive" />
               </CardHeader>
               <CardContent>
-                <div className="text-lg md:text-xl font-bold text-destructive">{formatCurrency(paidExpenses)}</div>
+                <div className="text-lg md:text-xl font-bold">{formatCurrency(paidExpenses)}</div>
               </CardContent>
             </Card>
             <Card>
