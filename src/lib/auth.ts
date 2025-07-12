@@ -23,6 +23,3 @@ export const signInWithGoogle = () => {
 export const signOutUser = () => {
   return signOut(auth);
 };
-
-// This export is no longer needed with signInWithPopup
-export { auth };

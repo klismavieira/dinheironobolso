@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { signInWithEmail, signInWithGoogle, signOutUser } from '@/lib/auth';
 
@@ -22,13 +22,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // This now runs only on the client, which is the correct place for it.
+    const unsubscribePromise = setPersistence(auth, browserLocalPersistence).then(() => {
+      // onAuthStateChanged() sets up the real-time listener for auth changes.
+      return onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setLoading(false);
+      });
+    }).catch(error => {
+      console.error("Firebase Auth persistence error:", error.code, error.message);
       setLoading(false);
+      // Return a no-op function if persistence fails, so we don't break the app
+      return () => {};
     });
 
     // Cleanup subscription on unmount
-    return () => unsubscribe();
+    return () => {
+      unsubscribePromise.then(unsubscribe => unsubscribe());
+    };
   }, []);
 
   const value = {
