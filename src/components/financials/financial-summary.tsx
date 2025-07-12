@@ -3,8 +3,8 @@
 
 import type { Transaction } from '@/lib/types';
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Banknote, TrendingUp, TrendingDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Banknote, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FinancialSummaryProps {
@@ -28,6 +28,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
   const paidExpenses = transactions
     .filter((t) => t.type === 'expense' && t.isPaid)
     .reduce((acc, t) => acc + t.amount, 0);
+
+  const currentBalance = previousBalance + receivedIncomes - paidExpenses;
   
   return (
     <div className="mb-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -41,13 +43,10 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
         <CardContent>
           <div className={cn(
             "text-2xl font-bold",
-            previousBalance < 0 ? "text-destructive" : "text-primary"
+            previousBalance < 0 ? "text-destructive" : ""
           )}>
             {formatCurrency(previousBalance)}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Valor do fechamento do mês anterior.
-          </p>
         </CardContent>
       </Card>
       <Card>
@@ -61,9 +60,6 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <div className="text-2xl font-bold text-accent">
             {formatCurrency(receivedIncomes)}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Soma de todas as receitas recebidas.
-          </p>
         </CardContent>
       </Card>
       <Card>
@@ -77,9 +73,22 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <div className="text-2xl font-bold text-destructive">
             {formatCurrency(paidExpenses)}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Soma de todas as despesas pagas.
-          </p>
+        </CardContent>
+      </Card>
+       <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            Saldo atual
+          </CardTitle>
+          <Wallet className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className={cn(
+            "text-2xl font-bold",
+            currentBalance < 0 ? "text-destructive" : "text-primary"
+          )}>
+            {formatCurrency(currentBalance)}
+          </div>
         </CardContent>
       </Card>
     </div>
