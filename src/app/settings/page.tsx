@@ -42,6 +42,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type CategoryEditState = {
   type: 'income' | 'expense';
@@ -238,11 +239,8 @@ export default function SettingsPage() {
     return (
       <div className="space-y-8">
         <Skeleton className="h-12 w-1/3" />
-        <div className="grid md:grid-cols-2 gap-8">
-            <Skeleton className="h-[400px] w-full" />
-            <Skeleton className="h-[400px] w-full" />
-        </div>
-        <Skeleton className="h-[200px] w-full" />
+        <Skeleton className="h-10 w-full max-w-sm" />
+        <Skeleton className="h-[400px] w-full" />
       </div>
     );
   }
@@ -251,33 +249,44 @@ export default function SettingsPage() {
   const userExpenseCategories = categories?.expense.filter(c => !EXPENSE_CATEGORIES.includes(c)) || [];
 
   return (
-    <div className="space-y-8">
-       <div>
+    <div className="space-y-6">
+      <div>
         <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie as configurações do seu aplicativo.</p>
+        <p className="text-muted-foreground">Gerencie as configurações da sua conta e do aplicativo.</p>
       </div>
-      <div className="grid md:grid-cols-2 gap-8 items-start">
-        {renderCategoryList('Categorias de Receita', 'income', INCOME_CATEGORIES, userIncomeCategories)}
-        {renderCategoryList('Categorias de Despesa', 'expense', EXPENSE_CATEGORIES, userExpenseCategories)}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Segurança</CardTitle>
-          <CardDescription>
-            Gerencie as configurações de segurança da sua conta.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handlePasswordReset} disabled={isResetting}>
-            {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Redefinir Senha
-          </Button>
-          <p className="text-sm text-muted-foreground mt-2">
-            Um e-mail será enviado para <strong>{user?.email}</strong> com instruções para redefinir sua senha.
-          </p>
-        </CardContent>
-      </Card>
+      
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList>
+          <TabsTrigger value="general">Geral</TabsTrigger>
+          <TabsTrigger value="income">Receitas</TabsTrigger>
+          <TabsTrigger value="expenses">Despesas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="general">
+          <Card>
+            <CardHeader>
+              <CardTitle>Segurança</CardTitle>
+              <CardDescription>
+                Gerencie as configurações de segurança da sua conta.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handlePasswordReset} disabled={isResetting}>
+                {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Redefinir Senha
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2">
+                Um e-mail será enviado para <strong>{user?.email}</strong> com instruções para redefinir sua senha.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="income">
+          {renderCategoryList('Categorias de Receita', 'income', INCOME_CATEGORIES, userIncomeCategories)}
+        </TabsContent>
+        <TabsContent value="expenses">
+          {renderCategoryList('Categorias de Despesa', 'expense', EXPENSE_CATEGORIES, userExpenseCategories)}
+        </TabsContent>
+      </Tabs>
 
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
