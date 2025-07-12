@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,9 +12,11 @@ import {
   onSnapshot,
   setDoc,
   arrayUnion,
+  arrayRemove,
   where,
   writeBatch,
   getDocs,
+  runTransaction,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import type { Transaction } from './types';
@@ -329,21 +332,73 @@ export const addCategory = async (type: 'income' | 'expense', newCategory: strin
   const fieldToUpdate = type === 'income' ? 'income' : 'expense';
   
   try {
-    await updateDoc(docRef, {
-      [fieldToUpdate]: arrayUnion(newCategory),
+    // Use setDoc with merge to create the document if it doesn't exist.
+    await setDoc(docRef, {
+      [fieldToUpdate]: arrayUnion(newCategory)
+    }, { merge: true });
+  } catch (error) {
+    console.error("Firebase Error: Failed to add category.", error);
+    if (error instanceof Error) {
+      throw new Error(`Não foi possível adicionar a categoria: ${error.message}`);
+    }
+    throw new Error("Não foi possível adicionar a nova categoria. Verifique sua conexão ou permissões.");
+  }
+};
+
+
+export const updateCategory = async (type: 'income' | 'expense', oldName: string, newName: string): Promise<void> => {
+  const userId = getCurrentUserId();
+  const categoryDocRef = doc(db, CATEGORIES_COLLECTION, userId);
+  const fieldToUpdate = type === 'income' ? 'income' : 'expense';
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      // 1. Update the category name in the categories document
+      transaction.update(categoryDocRef, {
+        [fieldToUpdate]: arrayRemove(oldName)
+      });
+      transaction.update(categoryDocRef, {
+        [fieldToUpdate]: arrayUnion(newName)
+      });
+
+      // 2. Find all transactions with the old category name and update them
+      const transQuery = query(
+        collection(db, TRANSACTIONS_COLLECTION),
+        where('userId', '==', userId),
+        where('category', '==', oldName),
+        where('type', '==', type)
+      );
+      
+      const transSnapshot = await getDocs(transQuery);
+      transSnapshot.forEach((doc) => {
+        transaction.update(doc.ref, { category: newName });
+      });
     });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === 'not-found') {
-      // If the document doesn't exist, create it.
-      await setDoc(docRef, {
-        [fieldToUpdate]: [newCategory]
-      });
-    } else {
-      console.error("Firebase Error: Failed to add category.", error);
-      if (error instanceof Error) {
-        throw new Error(`Não foi possível adicionar a categoria: ${error.message}`);
-      }
-      throw new Error("Não foi possível adicionar a nova categoria. Verifique sua conexão ou permissões.");
+    console.error("Firebase Error: Failed to update category and transactions.", error);
+    if (error instanceof Error) {
+      throw new Error(`Não foi possível atualizar a categoria: ${error.message}`);
     }
+    throw new Error("Não foi possível atualizar a categoria. Verifique sua conexão ou permissões.");
+  }
+};
+
+export const deleteCategory = async (type: 'income' | 'expense', categoryName: string): Promise<void> => {
+  const userId = getCurrentUserId();
+  const docRef = doc(db, CATEGORIES_COLLECTION, userId);
+  const fieldToUpdate = type === 'income' ? 'income' : 'expense';
+
+  try {
+    // Note: This does NOT update existing transactions with the deleted category.
+    // They will retain the old category name as a string.
+    await updateDoc(docRef, {
+      [fieldToUpdate]: arrayRemove(categoryName),
+    });
+  } catch (error) {
+    console.error("Firebase Error: Failed to delete category.", error);
+    if (error instanceof Error) {
+      throw new Error(`Não foi possível excluir a categoria: ${error.message}`);
+    }
+    throw new Error("Não foi possível excluir a categoria. Verifique sua conexão ou permissões.");
   }
 };
