@@ -30,10 +30,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
   const paidExpenses = transactions
     .filter((t) => t.type === 'expense' && t.isPaid)
     .reduce((sum, t) => sum + t.amount, 0);
-
-  // The final, actual cash in hand
+  
   const cashInHand = previousBalance + paidIncome - paidExpenses;
-
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -53,8 +51,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <TrendingUp className="h-5 w-5 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl md:text-2xl font-bold">{formatCurrency(totalIncome)}</div>
-              <p className="text-xs text-muted-foreground">Total de entradas no período</p>
+              <div className="text-lg md:text-xl font-bold">{formatCurrency(totalIncome)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -63,20 +60,18 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <TrendingDown className="h-5 w-5 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl md:text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-              <p className="text-xs text-muted-foreground">Total de saídas no período</p>
+              <div className="text-lg md:text-xl font-bold">{formatCurrency(totalExpenses)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Saldo Previsto</CardTitle>
+              <CardTitle className="text-sm font-medium">Balanço Previsto</CardTitle>
               <Scale className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-xl md:text-2xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+              <div className={`text-lg md:text-xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
                 {formatCurrency(balance)}
               </div>
-              <p className="text-xs text-muted-foreground">Balanço total do período</p>
             </CardContent>
           </Card>
         </div>
@@ -91,10 +86,9 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
                 <Banknote className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className={`text-xl md:text-2xl font-bold ${previousBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                <div className={`text-lg md:text-xl font-bold ${previousBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
                   {formatCurrency(previousBalance)}
                 </div>
-                <p className="text-xs text-muted-foreground">Saldo inicial do período</p>
               </CardContent>
             </Card>
             <Card>
@@ -103,10 +97,9 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
                 <Coins className="h-5 w-5 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl md:text-2xl font-bold text-accent">
+                <div className="text-lg md:text-xl font-bold text-accent">
                   {formatCurrency(paidIncome)}
                 </div>
-                <p className="text-xs text-muted-foreground">Total de entradas recebidas</p>
               </CardContent>
             </Card>
             <Card>
@@ -115,8 +108,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
                 <CheckCircle2 className="h-5 w-5 text-destructive" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl md:text-2xl font-bold text-destructive">{formatCurrency(paidExpenses)}</div>
-                <p className="text-xs text-muted-foreground">Total de saídas pagas</p>
+                <div className="text-lg md:text-xl font-bold text-destructive">{formatCurrency(paidExpenses)}</div>
               </CardContent>
             </Card>
             <Card>
@@ -125,10 +117,9 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
                 <Wallet className="h-5 w-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className={`text-xl md:text-2xl font-bold ${cashInHand >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                <div className={`text-lg md:text-xl font-bold ${cashInHand >= 0 ? 'text-primary' : 'text-destructive'}`}>
                   {formatCurrency(cashInHand)}
                 </div>
-                <p className="text-xs text-muted-foreground">Saldo final realizado</p>
               </CardContent>
             </Card>
         </div>
