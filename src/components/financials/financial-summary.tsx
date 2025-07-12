@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Transaction } from '@/lib/types';
@@ -47,7 +48,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <Banknote className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${previousBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+              <div className={`text-xl md:text-2xl font-bold ${previousBalance >= 0 ? 'text-accent' : 'text-destructive'}`}>
                 {formatCurrency(previousBalance)}
               </div>
               <p className="text-xs text-muted-foreground">Saldo do mês anterior</p>
@@ -59,7 +60,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <TrendingUp className="h-5 w-5 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
+              <div className="text-xl md:text-2xl font-bold">{formatCurrency(totalIncome)}</div>
               <p className="text-xs text-muted-foreground">Total de entradas no período</p>
             </CardContent>
           </Card>
@@ -69,7 +70,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <TrendingDown className="h-5 w-5 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+              <div className="text-xl md:text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
               <p className="text-xs text-muted-foreground">Total de saídas no período</p>
             </CardContent>
           </Card>
@@ -79,7 +80,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
               <Scale className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
+              <div className={`text-xl md:text-2xl font-bold ${balance >= 0 ? 'text-accent' : 'text-destructive'}`}>
                 {formatCurrency(balance)}
               </div>
               <p className="text-xs text-muted-foreground">Balanço total do período</p>
