@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine, LabelList } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine } from 'recharts';
 import {
   ChartContainer,
   ChartTooltipContent,
@@ -43,15 +43,6 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-const formatCompactNumber = (value: number) => {
-  if (value === 0) return null;
-  return new Intl.NumberFormat('pt-BR', {
-    notation: "compact",
-    compactDisplay: "short",
-  }).format(value);
-}
-
-
 export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
   return (
     <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
@@ -59,7 +50,7 @@ export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
         accessibilityLayer
         data={data}
         margin={{
-          top: 30,
+          top: 20,
           right: 10,
           left: 10,
           bottom: 0,
@@ -94,30 +85,9 @@ export function AnnualSummaryChart({ data }: AnnualSummaryChartProps) {
         />
         <Legend content={<ChartLegendContent />} />
         <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1} />
-        <Bar dataKey="Faturamento" fill="var(--color-Faturamento)" radius={[4, 4, 0, 0]}>
-          <LabelList
-            position="top"
-            offset={4}
-            className="fill-foreground text-xs"
-            formatter={formatCompactNumber}
-          />
-        </Bar>
-        <Bar dataKey="Despesa" fill="var(--color-Despesa)" radius={[4, 4, 0, 0]}>
-          <LabelList
-            position="top"
-            offset={4}
-            className="fill-foreground text-xs"
-            formatter={formatCompactNumber}
-          />
-        </Bar>
-         <Bar dataKey="Saldo" fill="var(--color-Saldo)" radius={[4, 4, 0, 0]}>
-          <LabelList
-            position="top"
-            offset={4}
-            className="fill-foreground text-xs"
-            formatter={formatCompactNumber}
-          />
-        </Bar>
+        <Bar dataKey="Faturamento" fill="var(--color-Faturamento)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Despesa" fill="var(--color-Despesa)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Saldo" fill="var(--color-Saldo)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ChartContainer>
   );
