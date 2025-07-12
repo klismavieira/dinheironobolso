@@ -4,7 +4,7 @@
 import type { Transaction } from '@/lib/types';
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Banknote, TrendingUp, TrendingDown, Wallet, CircleDollarSign, AlertCircle } from 'lucide-react';
+import { Banknote, TrendingUp, TrendingDown, Wallet, CircleDollarSign, AlertCircle, Scale } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -39,6 +39,8 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
   const plannedExpenses = transactions
     .filter((t) => t.type === 'expense')
     .reduce((acc, t) => acc + t.amount, 0);
+  
+  const plannedBalance = plannedIncomes - plannedExpenses;
   
   return (
     <div className="space-y-4 mb-4">
@@ -129,6 +131,22 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
               {formatCurrency(plannedExpenses)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Saldo previsto
+            </CardTitle>
+            <Scale className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={cn(
+              "text-2xl font-bold",
+              plannedBalance < 0 ? "text-destructive" : "text-primary"
+            )}>
+              {formatCurrency(plannedBalance)}
             </div>
           </CardContent>
         </Card>
