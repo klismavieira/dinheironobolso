@@ -1,23 +1,48 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/layout/header';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const publicRoutes = ['/login', '/signup'];
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, signOutUser } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
 
   const isPublicRoute = publicRoutes.includes(pathname);
 
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOutUser();
+      router.push('/login');
+      toast({
+        title: 'Sessão encerrada',
+        description: 'Você foi desconectado por inatividade.',
+      });
+    } catch (error) {
+      console.error("Error during inactivity logout:", error);
+    }
+  }, [signOutUser, router, toast]);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimer.current) {
+      clearTimeout(inactivityTimer.current);
+    }
+    inactivityTimer.current = setTimeout(handleLogout, INACTIVITY_TIMEOUT_MS);
+  }, [handleLogout]);
+
   useEffect(() => {
-    if (loading) return; // Don't do anything while loading
+    if (loading) return; 
 
     if (!user && !isPublicRoute) {
       router.push('/login');
@@ -28,6 +53,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, isPublicRoute, router, pathname]);
 
+  useEffect(() => {
+    if (user && !isPublicRoute) {
+      const activityEvents = [
+        'mousemove',
+        'mousedown',
+        'keydown',
+        'touchstart',
+        'scroll',
+      ];
+      
+      const resetListener = () => resetInactivityTimer();
+
+      activityEvents.forEach(event => {
+        window.addEventListener(event, resetListener);
+      });
+
+      resetInactivityTimer(); // Start the timer on initial load
+
+      return () => {
+        activityEvents.forEach(event => {
+          window.removeEventListener(event, resetListener);
+        });
+        if (inactivityTimer.current) {
+          clearTimeout(inactivityTimer.current);
+        }
+      };
+    }
+  }, [user, isPublicRoute, resetInactivityTimer]);
+
+
   if (loading || (!user && !isPublicRoute) || (user && isPublicRoute)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -36,7 +91,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // Show header only for authenticated users (not on public pages)
   const showHeader = !isPublicRoute;
 
   return (
