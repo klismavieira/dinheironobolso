@@ -38,10 +38,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 type CategoryEditState = {
@@ -51,13 +50,15 @@ type CategoryEditState = {
 };
 
 export default function SettingsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, sendPasswordReset } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [categories, setCategories] = useState<Categories | null>(null);
   const [loading, setLoading] = useState(true);
   const [editState, setEditState] = useState<CategoryEditState | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -132,6 +133,35 @@ export default function SettingsPage() {
       });
     }
   };
+  
+  const handlePasswordReset = async () => {
+    if (!user || !user.email) {
+      toast({
+        title: 'Erro',
+        description: 'Usuário não encontrado ou sem e-mail cadastrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsResetting(true);
+    try {
+      await sendPasswordReset(user.email);
+      toast({
+        title: 'E-mail de redefinição enviado!',
+        description: 'Verifique sua caixa de entrada para o link de redefinição de senha.',
+      });
+    } catch (error) {
+      console.error('Password Reset Error:', error);
+      toast({
+        title: 'Falha ao redefinir a senha',
+        description: 'Não foi possível enviar o e-mail. Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
 
   const renderCategoryList = (
     title: string,
@@ -206,9 +236,13 @@ export default function SettingsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="grid md:grid-cols-2 gap-8">
-        <Skeleton className="h-[400px] w-full" />
-        <Skeleton className="h-[400px] w-full" />
+      <div className="space-y-8">
+        <Skeleton className="h-12 w-1/3" />
+        <div className="grid md:grid-cols-2 gap-8">
+            <Skeleton className="h-[400px] w-full" />
+            <Skeleton className="h-[400px] w-full" />
+        </div>
+        <Skeleton className="h-[200px] w-full" />
       </div>
     );
   }
@@ -226,6 +260,25 @@ export default function SettingsPage() {
         {renderCategoryList('Categorias de Receita', 'income', INCOME_CATEGORIES, userIncomeCategories)}
         {renderCategoryList('Categorias de Despesa', 'expense', EXPENSE_CATEGORIES, userExpenseCategories)}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Segurança</CardTitle>
+          <CardDescription>
+            Gerencie as configurações de segurança da sua conta.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handlePasswordReset} disabled={isResetting}>
+            {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Redefinir Senha
+          </Button>
+          <p className="text-sm text-muted-foreground mt-2">
+            Um e-mail será enviado para <strong>{user?.email}</strong> com instruções para redefinir sua senha.
+          </p>
+        </CardContent>
+      </Card>
+
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
