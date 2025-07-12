@@ -18,20 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Download } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { FirebaseError } from 'firebase/app';
-
-function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      role="img"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <title>Google</title>
-      <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-4.63 1.9-3.87 0-7-3.13-7-7s3.13-7 7-7c1.93 0 3.53.72 4.68 1.8l2.8-2.8C19.02 3.92 16.1.92 12.48.92c-6.48 0-11.52 5.23-11.52 11.52s5.04 11.52 11.52 11.52c6.2 0 11.04-4.18 11.04-11.22 0-.76-.08-1.48-.2-2.16H12.48z" />
-    </svg>
-  );
-}
+import Link from 'next/link';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: Array<string>;
@@ -46,8 +33,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { signInWithEmail, signInWithGoogle, loading: authLoading } = useAuth();
+  const { signInWithEmail, sendPasswordReset, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -59,7 +45,7 @@ export default function LoginPage() {
       setInstallPrompt(e as BeforeInstallPromptEvent);
     };
 
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
       setIsStandalone(true);
     }
 
@@ -91,6 +77,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmail(email, password);
+      // O redirecionamento será feito pelo AppLayout
     } catch (error) {
       console.error('Login Error:', error);
       toast({
@@ -103,31 +90,35 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-    } catch (error) {
-      const firebaseError = error as FirebaseError;
-      console.error('Google Login Error:', firebaseError.code, firebaseError.message);
-      let description = 'Não foi possível fazer o login com o Google. Tente novamente.';
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
-        description = 'A janela de login foi fechada antes da conclusão. Por favor, tente novamente.';
-      } else if (firebaseError.code === 'auth/cancelled-popup-request' || firebaseError.code === 'auth/popup-blocked') {
-        description = 'O pop-up de login foi bloqueado pelo seu navegador. Por favor, habilite os pop-ups para este site.';
-      }
-      
+  const handlePasswordReset = async () => {
+    if (!email) {
       toast({
-        title: 'Falha no Login com Google',
-        description,
+        title: 'E-mail necessário',
+        description: 'Por favor, insira seu e-mail para redefinir a senha.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordReset(email);
+      toast({
+        title: 'E-mail enviado!',
+        description: 'Verifique sua caixa de entrada para o link de redefinição de senha.',
+      });
+    } catch (error) {
+      console.error('Password Reset Error:', error);
+      toast({
+        title: 'Falha ao redefinir a senha',
+        description: 'Não foi possível enviar o e-mail. Verifique o endereço e tente novamente.',
         variant: 'destructive',
       });
     } finally {
-      setGoogleLoading(false);
+      setLoading(false);
     }
-  };
+  }
   
-  const isAnyLoading = loading || googleLoading || authLoading;
+  const isAnyLoading = loading || authLoading;
 
   return (
     <div className="flex min-h-full items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -160,7 +151,17 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Senha</Label>
+                    <button
+                        type="button"
+                        onClick={handlePasswordReset}
+                        className="text-sm font-medium text-primary hover:underline"
+                        disabled={isAnyLoading}
+                    >
+                        Esqueceu a senha?
+                    </button>
+                </div>
               <Input
                 id="password"
                 name="password"
@@ -178,27 +179,15 @@ export default function LoginPage() {
               Entrar
             </Button>
           </form>
-          <div className="my-6 flex items-center">
-            <Separator className="flex-1" />
-            <span className="mx-4 text-sm text-muted-foreground">OU</span>
-            <Separator className="flex-1" />
+          <div className="mt-6 text-center text-sm">
+            Não tem uma conta?{' '}
+            <Link href="/signup" className="font-medium text-primary hover:underline">
+                Cadastre-se
+            </Link>
           </div>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleGoogleLogin}
-            disabled={isAnyLoading}
-          >
-            {googleLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <GoogleIcon className="mr-2 h-4 w-4" />
-            )}
-            Entrar com Google
-          </Button>
         </CardContent>
         {installPrompt && !isStandalone && (
-          <CardFooter className="flex-col gap-2">
+          <CardFooter className="flex-col gap-2 pt-6">
             <Separator />
             <Button variant="secondary" className="w-full mt-4" onClick={handleInstallClick}>
               <Download className="mr-2 h-4 w-4" />

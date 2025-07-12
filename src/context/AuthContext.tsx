@@ -4,15 +4,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { signInWithEmail, signInWithGoogle, signOutUser } from '@/lib/auth';
+import { signInWithEmail, signUpWithEmail, signOutUser, sendPasswordReset } from '@/lib/auth';
 
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithEmail: typeof signInWithEmail;
-  signInWithGoogle: typeof signInWithGoogle;
+  signUpWithEmail: typeof signUpWithEmail;
   signOutUser: typeof signOutUser;
+  sendPasswordReset: typeof sendPasswordReset;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,8 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     loading,
     signInWithEmail,
-    signInWithGoogle,
+    signUpWithEmail,
     signOutUser,
+    sendPasswordReset,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

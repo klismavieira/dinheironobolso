@@ -2,22 +2,24 @@
 'use client';
 
 import { 
-  signInWithEmailAndPassword, 
-  GoogleAuthProvider, 
-  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
 } from "firebase/auth";
 import { auth } from './firebase';
 
-const googleProvider = new GoogleAuthProvider();
 
 export const signInWithEmail = (email: string, password: string) => {
   return signInWithEmailAndPassword(auth, email, password);
 };
 
-export const signInWithGoogle = () => {
-  // Use signInWithPopup for a better user experience in most browsers.
-  return signInWithPopup(auth, googleProvider);
+export const signUpWithEmail = (email: string, password: string) => {
+  return createUserWithEmailAndPassword(auth, email, password);
+};
+
+export const sendPasswordReset = (email: string) => {
+    return sendPasswordResetEmail(auth, email);
 };
 
 export const signOutUser = () => {

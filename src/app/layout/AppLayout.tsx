@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/layout/header';
 import { Loader2 } from 'lucide-react';
 
-const publicRoutes = ['/login'];
+const publicRoutes = ['/login', '/signup'];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
