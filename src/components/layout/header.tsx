@@ -15,12 +15,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function Header() {
   const { signOutUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { setTheme } = useTheme();
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    // This runs on the client to avoid hydration mismatch
+    const today = new Date();
+    const formattedDate = format(today, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    setCurrentDate(formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1));
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -45,9 +56,12 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <Logo className="h-8 w-8 text-primary" />
-            <h1 className="text-xl md:text-2xl font-bold text-foreground font-sans">
-              Dinheiro no Bolso
-            </h1>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-foreground font-sans leading-tight">
+                Dinheiro no Bolso
+              </h1>
+              {currentDate && <p className="text-xs text-muted-foreground">{currentDate}</p>}
+            </div>
           </div>
           <nav className="flex items-center gap-1 sm:gap-2">
             <Button variant="ghost" asChild>
