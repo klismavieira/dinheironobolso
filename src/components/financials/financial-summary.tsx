@@ -40,7 +40,7 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     .filter((t) => t.type === 'expense')
     .reduce((acc, t) => acc + t.amount, 0);
   
-  const plannedBalance = plannedIncomes - plannedExpenses;
+  const plannedBalance = previousBalance + plannedIncomes - plannedExpenses;
   
   return (
     <div className="space-y-4 mb-4">
