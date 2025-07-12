@@ -6,6 +6,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Banknote, TrendingUp, TrendingDown, Wallet, CircleDollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 interface FinancialSummaryProps {
   transactions: Transaction[];
@@ -97,6 +98,9 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
           </CardContent>
         </Card>
       </div>
+
+      <Separator className="my-4" />
+      
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -115,4 +119,3 @@ export function FinancialSummary({ transactions, previousBalance }: FinancialSum
     </div>
   );
 }
-
