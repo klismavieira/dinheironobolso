@@ -1,20 +1,21 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { FirebaseError } from 'firebase/app';
 
@@ -32,6 +33,15 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,13 +49,41 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signInWithEmail, signInWithGoogle, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (!installPrompt) {
+      return;
+    }
+    installPrompt.prompt();
+    installPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      setInstallPrompt(null);
+    });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await signInWithEmail(email, password);
-      // On success, AuthProvider will handle navigation
     } catch (error) {
       console.error('Login Error:', error);
       toast({
@@ -62,8 +100,6 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // On success, AuthProvider's onAuthStateChanged will handle navigation
-      // We might not even need to set loading to false here if navigation is quick
     } catch (error) {
       const firebaseError = error as FirebaseError;
       console.error('Google Login Error:', firebaseError.code, firebaseError.message);
@@ -80,7 +116,6 @@ export default function LoginPage() {
         variant: 'destructive',
       });
     } finally {
-      // Always set loading to false in case of any error or if the user simply closes the popup.
       setGoogleLoading(false);
     }
   };
@@ -155,6 +190,18 @@ export default function LoginPage() {
             Entrar com Google
           </Button>
         </CardContent>
+        {installPrompt && (
+          <CardFooter className="flex-col gap-2">
+            <Separator />
+            <Button variant="secondary" className="w-full mt-4" onClick={handleInstallClick}>
+              <Download className="mr-2 h-4 w-4" />
+              Instalar App
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              Instale o app no seu dispositivo para acesso rápido.
+            </p>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );
