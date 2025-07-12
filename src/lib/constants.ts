@@ -11,6 +11,7 @@ export const EXPENSE_CATEGORIES = [
   'Moradia',
   'Casa',
   'Alimentação',
+  'Supermercado',
   'Transporte',
   'Lazer',
   'Saúde',
